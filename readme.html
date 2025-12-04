@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>剛好測 - 教師教學建置手冊</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&amp;display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #f8fafc; /* light gray background */
+        }
+        .content-section {
+            background-color: white;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            border: 1px solid #e5e7eb;
+        }
+        .feature-card {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease-in-out;
+        }
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -2px rgb(0 0 0 / 0.04);
+        }
+        .feature-icon {
+            font-size: 2rem;
+            width: 4rem;
+            height: 4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin-bottom: 1rem;
+        }
+        .tip-box {
+            background-color: #eff6ff; /* light blue */
+            border-left: 4px solid #3b82f6; /* blue */
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+        .tip-box p {
+            color: #1e40af; /* dark blue text */
+        }
+        .warning-box {
+            background-color: #fffbeb; /* light yellow */
+            border-left: 4px solid #f59e0b; /* yellow */
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+        .warning-box p {
+            color: #b45309; /* dark yellow text */
+        }
+        .scenario-box {
+            background-color: #f0fdf4; /* light green */
+            border-left: 4px solid #22c55e; /* green */
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+        .scenario-box p {
+            color: #15803d; /* dark green text */
+        }
+        .top-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            justify-content: center;
+        }
+        .top-nav a,
+        .top-nav button {
+            padding: 0.5rem 1.25rem;
+            border-radius: 9999px;
+            color: #4b5563;
+            font-weight: 500;
+            transition: all 0.2s ease-in-out;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+        }
+        .top-nav a:hover,
+        .top-nav button:hover {
+            background-color: #e0e7ff;
+            color: #4338ca;
+        }
+        .top-nav .active {
+            background-color: #4f46e5;
+            color: #ffffff;
+            box-shadow: 0 10px 15px -3px rgb(79 70 229 / 0.3), 0 4px 6px -4px rgb(79 70 229 / 0.2);
+        }
+        h2, h3 {
+            scroll-margin-top: 180px; /* Offset for sticky header */
+        }
+        code {
+            background-color: #f3f4f6;
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            border-radius: 3px;
+        }
+        pre > code {
+            display: block;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-white sticky top-0 z-50 shadow-sm border-b border-gray-200">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-quidditch text-3xl text-violet-600"></i>
+                <h1 class="text-2xl font-bold text-gray-900">剛好測・教師教學建置手冊</h1>
+            </div>
+            <!-- 修改區塊：新增軟體連結按鈕 -->
+            <div class="flex items-center gap-3">
+                <a href="https://kentxchang.github.io/aiquiztools/" target="_blank" rel="noopener noreferrer" 
+                   class="text-sm bg-violet-100 text-violet-600 hover:bg-violet-200 transition px-3 py-1.5 rounded-full font-medium flex items-center shadow-sm">
+                    <i class="fas fa-external-link-alt mr-2 text-xs"></i> 前往「剛好測」軟體
+                </a>
+                <a href="#" target="_blank" rel="noopener noreferrer" class="text-sm text-violet-600 hover:text-violet-800 transition">
+                    By 軟體教學手冊生成
+                </a>
+            </div>
+            <!-- 結束修改區塊 -->
+        </div>
+
+        <!-- Navigation -->
+        <nav class="bg-white border-b border-gray-200 shadow-sm">
+            <div class="container mx-auto px-6">
+                <ul class="top-nav py-3 text-sm text-gray-600 font-medium">
+                    <li><button type="button" data-target="getting-started" class="">🚀 快速上手</button></li>
+                    <li><button type="button" data-target="core-modes" class="">🧠 核心測驗模式</button></li>
+                    <li><button type="button" data-target="ai-features">✨ 進階功能與 AI 應用</button></li>
+                    <li><button type="button" data-target="analytics-management">📊 測驗啟用與分析</button></li>
+                    <li><button type="button" data-target="faq" class="">❓ 常見問題</button></li>
+                    <li><button type="button" data-target="firebase-setup">🔧 建置系統與 API</button></li>
+                    <li><button type="button" data-target="publish-share">🔗 部署與分享</button></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 pt-40 pb-12">
+        <main class="max-w-4xl mx-auto space-y-8">
+            
+            <!-- 1. Getting Started -->
+            <section id="getting-started" data-section="" class="content-section hidden">
+                <h2 class="text-3xl font-bold mb-4 text-gray-900">🚀 快速上手：開始您的即時測驗</h2>
+                <p class="text-lg text-gray-600 mb-4">「剛好測」是一個無需學生帳號的即時線上測驗系統。教師可透過 AI 輔助快速出題，學生輸入姓名即可作答，成績與分析即時呈現於教師儀表板。以下三步驟將引導您快速開始：</p>
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-xl font-bold mb-2 flex items-center gap-2"><div class="bg-violet-100 text-violet-600 rounded-full w-8 h-8 flex items-center justify-center font-bold">1</div> 進入教師管理後台</h3>
+                        <p>進入首頁後，點擊「我是老師」，系統會要求輸入教師密碼 <strong class="text-red-600">（預設為 tpet）</strong> 進行驗證。驗證通過後，您將進入「教師管理儀表板」。</p>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold mb-2 flex items-center gap-2"><div class="bg-violet-100 text-violet-600 rounded-full w-8 h-8 flex items-center justify-center font-bold">2</div> 建立您的測驗題庫</h3>
+                        <p>在儀表板點擊「<code class="bg-gray-200 px-1 rounded">新增題庫</code>」按鈕，設定測驗標題、分類，並選擇題型（一般選擇題或閱讀測驗）。您可以利用內建的 AI 功能或手動匯入方式建立題目。</p>
+                        <div class="warning-box">
+                            <p><strong>注意：</strong>AI 出題功能需要您事先在「系統設定」中配置有效的 Gemini API Key 才能使用。</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold mb-2 flex items-center gap-2"><div class="bg-violet-100 text-violet-600 rounded-full w-8 h-8 flex items-center justify-center font-bold">3</div> 啟用測驗並邀請學生</h3>
+                        <p>在題庫列表中，找到您想使用的測驗，點擊「<code class="bg-gray-200 px-1 rounded">啟用</code>」按鈕。系統將在全球狀態中標記此測驗為進行中。學生在首頁點擊「我是學生」，輸入姓名後，即可自動載入您啟用的測驗並開始作答。</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. Core Quiz Modes -->
+            <section id="core-modes" data-section="" class="content-section hidden">
+                <h2 class="text-3xl font-bold mb-6 text-gray-900">🧠 核心測驗模式：兩種主要評量類型</h2>
+                <div class="grid md:grid-cols-2 gap-6">
+                    
+                    <!-- A. 一般選擇題 (Multiple-Choice) -->
+                    <div class="feature-card">
+                        <div class="feature-icon bg-sky-100 text-sky-600"><i class="fas fa-list-check"></i></div>
+                        <h3 class="text-xl font-bold mb-2">A. 一般選擇題 (Multiple-Choice)</h3>
+                        <p class="text-gray-600 mb-4">適用於單一知識點的快速評量。支援 AI 依難度（簡單/一般/困難）自動生成題目，或透過手動/貼上方式快速建置題庫。</p>
+                        <div class="scenario-box">
+                            <p><strong>適用情境：</strong>課堂結束後的隨堂小考、單元重點複習測試、或從課本/講義直接擷取內容進行快速出題。</p>
+                        </div>
+                    </div>
+
+                    <!-- B. 閱讀測驗 (Reading Comprehension) -->
+                    <div class="feature-card">
+                        <div class="feature-icon bg-blue-100 text-blue-700"><i class="fas fa-book-open"></i></div>
+                        <h3 class="text-xl font-bold mb-2">B. 閱讀測驗 (Reading Comprehension)</h3>
+                        <p class="text-gray-600 mb-4">整合式測驗，支援學生作答時使用螢光筆畫記。教師可設定文本來源（貼上、上傳檔案或 AI 主題生成），並依 PIRLS 四層次結構生成題目。</p>
+                         <div class="scenario-box">
+                            <p><strong>適用情境：</strong>中長篇閱讀理解評量，特別針對國文或英文科目，並需要觀察學生「畫記」習慣作為分析參考。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 3. Advanced Features -->
+            <section id="ai-features" data-section="" class="content-section hidden">
+                <h2 class="text-3xl font-bold mb-6 text-gray-900">✨ 進階功能與 AI 應用：高效出題與精準評量</h2>
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-xl font-bold mb-2"><i class="fas fa-robot text-violet-600 mr-2"></i> AI 智能出題：多媒體來源支援</h3>
+                        <p>在建立「一般選擇題」時，您可以選擇「AI 自動出題」模式。AI 支援多種來源內容，實現一鍵出題：</p>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700 ml-6 mt-2">
+                            <li><strong>純文字貼上：</strong>直接貼上講義、課文或文章內容。</li>
+                            <li><strong>圖片上傳：</strong>上傳筆記、黑板照片或圖表，AI 將會理解內容並根據其生成題目。</li>
+                            <li><strong>PDF 檔案解析：</strong>支援直接上傳 PDF 檔案，系統會自動解析出文字內容作為出題依據。</li>
+                        </ul>
+                        <p class="text-gray-700 mt-2">您可自訂「簡單題數」、「一般題數」和「困難題數」的比例，以控制測驗難度分佈。</p>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold mb-2"><i class="fas fa-layer-group text-blue-600 mr-2"></i> 閱讀測驗：PIRLS 層次設定</h3>
+                        <p>在建立「閱讀測驗」時，您可以精確控制 AI 依據 PIRLS 閱讀理解四層次出題的數量：</p>
+                        <ul class="list-decimal list-inside space-y-2 text-gray-700 ml-6 mt-2">
+                            <li><strong>提取訊息 (Retrieval)：</strong>考驗從文本中直接找出答案的能力。</li>
+                            <li><strong>推論理解 (Inference)：</strong>考驗根據文本線索進行簡單推斷的能力。</li>
+                            <li><strong>詮釋整合 (Interpretation)：</strong>考驗整合文本不同部分資訊，理解主旨的能力。</li>
+                            <li><strong>評估鑑賞 (Evaluation)：</strong>考驗批判性思考，評估作者觀點或寫作手法的能力。</li>
+                        </ul>
+                        <div class="tip-box">
+                            <p><strong>提示：</strong>您可以指定 AI 輸出語言 (繁中/英文/日文/韓文)，並可選擇讓 AI 依據您輸入的「主題」自動生成一篇閱讀文本。</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold mb-2"><i class="fas fa-pen-to-square text-orange-600 mr-2"></i> 題庫精細化管理</h3>
+                        <p>所有題庫都具備完整的編輯功能：</p>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700 ml-6 mt-2">
+                            <li><strong>手動/貼上：</strong>支援使用格式化文字（題目、答案、選項、解析）快速貼上並批量匯入題目。</li>
+                            <li><strong>單題編輯：</strong>在題目列表中，您可以隨時對單一題目進行修改（標題、選項、答案、難易度、解析），甚至可以單獨刪除某一題。</li>
+                            <li><strong>複製題庫：</strong>點擊「<code class="bg-gray-200 px-1 rounded">複製</code>」按鈕，可以快速生成一個完全一樣的題庫副本，方便您進行版本修改或調整難度。</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 4. Analytics and Management -->
+            <section id="analytics-management" data-section="" class="content-section hidden">
+                <h2 class="text-3xl font-bold mb-6 text-gray-900">📊 測驗啟用與資料分析：掌握學習成效</h2>
+                 <div class="space-y-6">
+                    <div>
+                        <h3 class="text-xl font-bold mb-2"><i class="fas fa-play text-green-600 mr-2"></i> 測驗啟用與停止</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700 ml-6 mt-2">
+                            <li><strong>啟用：</strong>在儀表板點擊題庫上的「<code class="bg-gray-200 px-1 rounded">啟用</code>」按鈕，即代表該測驗開始進行。此時學生端將立即顯示該測驗。</li>
+                            <li><strong>停止：</strong>已啟用的測驗上方會出現綠色橫幅，點擊橫幅上的「<code class="bg-gray-200 px-1 rounded">結束測驗</code>」按鈕，即可停止該測驗，學生將無法再進入作答。</li>
+                            <li><strong>分類與篩選：</strong>您可以依據自訂的「分類」標籤，快速篩選儀表板上的題庫列表。</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold mb-2"><i class="fas fa-chart-pie text-violet-600 mr-2"></i> 成績分析總覽</h3>
+                        <p>點擊題庫上的「<code class="bg-gray-200 px-1 rounded">查看分析</code>」按鈕，可查看詳細的測驗報告：</p>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700 ml-6 mt-2">
+                            <li><strong>成績分佈：</strong>透過長條圖（0-20, 21-40...）直觀了解全班的成績分佈概況。</li>
+                            <li><strong>學生列表：</strong>按分數高低排序的學生作答列表，可點擊「詳情」進入個別學生報告。</li>
+                            <li><strong>下載報表：</strong>點擊「<code class="bg-gray-200 px-1 rounded">下載報表</code>」按鈕，可匯出 CSV 格式的成績紀錄，包含學生姓名、得分、作答詳情，方便匯入成績系統。</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold mb-2"><i class="fas fa-list-check text-red-600 mr-2"></i> 試題分析與錯誤診斷</h3>
+                        <p>在分析報告中切換到「試題分析」頁籤：</p>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700 ml-6 mt-2">
+                            <li><strong>答對率：</strong>每道題目的答對率長條圖，讓您快速找出全班的弱點知識點（答對率低的題目）。</li>
+                            <li><strong>答錯名單：</strong>每題皆可展開查看所有答錯的學生姓名，以及他們選擇的錯誤選項，利於點名檢討或個別輔導。</li>
+                        </ul>
+                    </div>
+                     <div>
+                        <h3 class="text-xl font-bold mb-2"><i class="fas fa-graduation-cap text-sky-600 mr-2"></i> 個別學生報告與畫記內容</h3>
+                        <p>在個別學生報告中，除了詳盡的答題正確性分析外，如果測驗類型為「閱讀測驗」，您還可以查看該學生在作答過程中使用的螢光筆畫記內容，作為評估其閱讀策略與專注度的重要參考。</p>
+                    </div>
+                 </div>
+            </section>
+            
+            <!-- 5. FAQ -->
+            <section id="faq" data-section="" class="content-section hidden">
+                <h2 class="text-3xl font-bold mb-6 text-gray-900">❓ 常見問題</h2>
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-xl font-bold mb-2">Q: 學生可以在作答過程中切換回首頁嗎？</h3>
+                        <p>A: 學生在作答時應保持在測驗畫面。如果學生不小心關閉網頁或切換畫面，只要重新開啟並輸入相同姓名，系統將會引導他回到目前的測驗進度（已作答的答案會被保留）。</p>
+                    </div>
+                     <div>
+                        <h3 class="text-xl font-bold mb-2">Q: 忘記教師密碼怎麼辦？</h3>
+                        <p>A: 預設教師密碼為 <strong class="text-red-600">tpet</strong>。此密碼是寫死在程式碼中的，目前無法從介面修改。如果您需要更改密碼，必須直接編輯 HTML 程式碼中的相應部分。</p>
+                    </div>
+                     <div>
+                        <h3 class="text-xl font-bold mb-2">Q: 我可以同時啟用多個測驗嗎？</h3>
+                        <p>A: 為了避免學生混淆，「剛好測」在任何時間點<strong>只允許啟用一個測驗</strong> (Active Quiz)。當您啟用新的測驗時，舊的測驗會自動停止。若您需要管理多個班級，請使用不同的瀏覽器或分頁，分別部署獨立的「剛好測」應用程式。</p>
+                    </div>
+                     <div>
+                        <h3 class="text-xl font-bold mb-2">Q: 學生端看到的螢光筆畫記內容，老師也看得到嗎？</h3>
+                        <p>A: 是的。學生在「閱讀測驗」中使用的所有畫記（包含顏色和位置）都會與答案一起儲存到資料庫。教師在「成績分析」中查看學生報告時，可以同步看到該學生的畫記內容，作為分析其閱讀習慣的輔助資料。</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 6. Firebase Setup and API -->
+            <section id="firebase-setup" data-section="" class="content-section hidden">
+                <h2 class="text-3xl font-bold mb-6 text-gray-900">🔧 建置系統與 API：設定持久化與 AI 功能</h2>
+                <p class="text-gray-700 mb-4">
+                    「剛好測」需要連接 Google Firebase Firestore 作為資料庫，以及 Gemini API Key 來啟用 AI 輔助出題功能。這兩項設定都可以在應用程式右上角的「<code class="bg-gray-200 px-1 rounded">齒輪圖示 (系統設定)</code>」中完成。
+                </p>
+                <div class="warning-box">
+                    <p><strong>注意：</strong>若未完成 Firebase 資料庫設定，系統將無法儲存任何題庫或作答紀錄。</p>
+                </div>
+
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-xl font-bold mb-2">1. Firebase 資料庫連線設定</h3>
+                        <p>您需要建立一個 Firebase 專案，並啟用 <strong>Authentication（匿名登入）</strong>和 <strong>Firestore Database</strong>。您可以點擊設定視窗中的「<code class="bg-gray-200 px-1 rounded">查看圖文教學</code>」按鈕，按照詳細步驟操作。</p>
+                         <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-6 mt-2">
+                            <li>在 Firebase Console 註冊 Web App，並取得 <code>firebaseConfig</code> 程式碼區塊。</li>
+                            <li>將該程式碼區塊的內容貼到「系統設定」中的「資料庫連接」文字框。</li>
+                            <li>點擊「<code class="bg-gray-200 px-1 rounded">儲存並連線</code>」。系統會將設定儲存在您的瀏覽器中並進行初始化連線。</li>
+                             <li>**重要：**請確保您已設定 Firestore 安全性規則，允許匿名使用者讀寫資料，否則儲存操作將會失敗。</li>
+                        </ol>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold mb-2">2. AI API Key 設定</h3>
+                        <p>AI 智能出題功能需要呼叫 Google Gemini API。您必須提供自己的 API Key。</p>
+                         <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-6 mt-2">
+                            <li>前往 <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">Google AI Studio</a> 申請 Gemini API Key。</li>
+                            <li>將取得的 Key 完整貼入「系統設定」中「AI API 設定」區塊的輸入框。</li>
+                            <li>系統會自動儲存您的 Key 於瀏覽器中，並在您需要 AI 服務時自動使用。</li>
+                        </ol>
+                         <div class="tip-box">
+                            <p><strong>提示：</strong>AI API Key 是獨立於 Firebase 設定的。即使您沒有 Firebase 資料庫，只要有 Key，AI 出題功能在儲存到本地題庫時仍可使用。</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold mb-2">3. 資料庫免費額度與注意事項</h3>
+                        <p>「剛好測」基於 Firebase 免費方案運行。由於所有測驗資料都是文字或結構化數據，其儲存空間和讀寫次數的消耗極低，在正常教學情境下，您幾乎不用擔心會超過 Firebase 的免費額度。</p>
+                        <div class="scenario-box">
+                            <p><strong>總結：：</strong>對於純文字選擇題測驗來說，Firebase 免費方案非常充裕。您只需確保在 Firebase 設定中正確啟用了匿名驗證和 Firestore 資料庫即可。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- 7. Publish and Share -->
+            <section id="publish-share" data-section="" class="content-section hidden">
+                <h2 class="text-3xl font-bold mb-6 text-gray-900">🔗 部署與分享：多種方式分發應用程式</h2>
+                <p class="text-gray-700 mb-4">
+                    完成所有設定後，您可以透過多種方式將「剛好測」發佈給其他教師或學生使用。
+                </p>
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-xl font-bold mb-2">1. 教師用分享連結 (含設定)</h3>
+                        <p>在「系統設定」的「分享應用程式」區塊中，可以找到「教師用分享」連結：</p>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700 ml-6 mt-2">
+                            <li><strong>功能：：</strong>此連結（或對應的 QR Code）包含了您的 Firebase 連線設定。</li>
+                            <li><strong>用途：：</strong>供您在不同裝置間同步設定，或分享給其他協作教師，讓他們可以跳過 Firebase 設定步驟直接開始使用。</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold mb-2">2. 學生專用分享連結 (簡化介面)</h3>
+                        <p>在「系統設定」中，可以找到「學生專用分享」連結：</p>
+                        <ul class="list-disc list-inside space-y-2 text-gray-700 ml-6 mt-2">
+                            <li><strong>功能：：</strong>此連結會強制應用程式以「學生模式」啟動。</li>
+                            <li><strong>效果：：</strong>學生打開後將直接進入學生登入畫面，完全隱藏教師入口、設定按鈕和所有管理功能。</li>
+                            <li><strong>用途：：</strong>請將此連結或 QR Code 提供給您的學生，以避免他們誤觸或更改您的系統設定。</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold mb-2">3. 靜態網頁空間部署</h3>
+                        <p>如果您不希望每次都從本地檔案開啟，建議將 HTML 檔案部署到靜態網頁空間（例如：GitHub Pages, Vercel, 或您學校的網頁伺服器）。</p>
+                        <ol class="list-decimal list-inside space-y-2 text-gray-700 ml-6 mt-2">
+                            <li>使用您喜歡的方式將 <code>剛好測V2.html</code> 檔案上傳到網頁空間。</li>
+                            <li>學生和教師即可透過網址隨時存取。</li>
+                        </ol>
+                         <div class="tip-box">
+                            <p><strong>提示：：</strong>部署完成後，您可以將「學生專用分享連結」設定為該網頁的書籤或投影給學生，方便他們快速登入。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-8">
+        <div class="container mx-auto px-6 py-4 text-center text-sm">
+            <p class="">© 2024 阿剛老師 (Kent Chang). All Rights Reserved.</p>
+            <p class="text-gray-400 mt-1">「剛好測」教師教學建置手冊</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript for Navigation Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navButtons = document.querySelectorAll('.top-nav [data-target]');
+            const sections = document.querySelectorAll('[data-section]');
+            
+            if (navButtons.length === 0 || sections.length === 0) {
+                console.error("Manual sections or navigation buttons not found.");
+                return;
+            }
+
+            const header = document.querySelector('header');
+            
+            const showSection = (id) => {
+                sections.forEach((section) => {
+                    if (section.id === id) {
+                        section.classList.remove('hidden');
+                    } else {
+                        section.classList.add('hidden');
+                    }
+                });
+
+                navButtons.forEach((btn) => {
+                    if (btn.dataset.target === id) {
+                        btn.classList.add('active');
+                        btn.setAttribute('aria-current', 'page');
+                    } else {
+                        btn.classList.remove('active');
+                        btn.removeAttribute('aria-current');
+                    }
+                });
+                
+                const offset = header ? header.offsetHeight : 0;
+                setTimeout(() => {
+                    window.scrollTo({ top: offset, behavior: 'smooth' });
+                }, 10);
+            };
+
+            navButtons.forEach((btn) => {
+                btn.addEventListener('click', (event) => {
+                    const target = btn.dataset.target;
+                    if (!target) return;
+                    showSection(target);
+                });
+            });
+
+            // Initialize the first section view on load
+            const initialSection = 'getting-started';
+            showSection(initialSection);
+             // Ensure the first button is active
+            const firstButton = document.querySelector(`.top-nav [data-target="${initialSection}"]`);
+            if (firstButton) {
+                navButtons.forEach(btn => btn.classList.remove('active'));
+                firstButton.classList.add('active');
+            }
+        });
+    </script>
+</body>
+</html>
