@@ -365,6 +365,10 @@
                                                 <span v-else><i class="fa-solid fa-sparkles mr-2"></i>由AI生成文本</span>
                                             </button>
                                         </div>
+                                        <div class="mt-2 inline-flex items-center px-2.5 py-1 bg-green-50 rounded-full">
+                                            <i class="fa-solid fa-robot text-green-600 mr-1.5 text-xs"></i>
+                                            <span class="text-xs font-medium text-green-700">使用模型: {{ currentModelName }}</span>
+                                        </div>
                                     </div>
 
                                     <div v-if="readingConfig.textSource === 'upload'" class="mb-3">
@@ -403,11 +407,19 @@
                                     </div>
                                     
                                     <!-- 生成按鈕 -->
-                                    <div class="flex justify-end">
-                                        <button @click="generateReadingComprehension" :disabled="!canGenerateReading || isGenerating" class="px-6 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
-                                            <span v-if="isGenerating"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>AI 生成題目中...</span>
-                                            <span v-else><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>生成閱讀測驗</span>
-                                        </button>
+                                    <div class="space-y-2">
+                                        <div class="flex items-center justify-end">
+                                            <div class="inline-flex items-center px-3 py-1.5 bg-blue-50 rounded-full">
+                                                <i class="fa-solid fa-robot text-blue-600 mr-2 text-xs"></i>
+                                                <span class="text-xs font-medium text-blue-700">使用模型: {{ currentModelName }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex justify-end">
+                                            <button @click="generateReadingComprehension" :disabled="!canGenerateReading || isGenerating" class="px-6 py-2 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                                                <span v-if="isGenerating"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>AI 生成題目中...</span>
+                                                <span v-else><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>生成閱讀測驗</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -459,6 +471,13 @@
                                         <div>
                                             <label class="text-xs font-bold text-slate-500">困難題數</label>
                                             <input v-model.number="aiConfig.hard" type="number" min="0" class="w-full mt-1 p-2 border rounded-lg">
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="inline-flex items-center px-3 py-1.5 bg-violet-50 rounded-full">
+                                            <i class="fa-solid fa-robot text-violet-600 mr-2 text-xs"></i>
+                                            <span class="text-xs font-medium text-violet-700">使用模型: {{ currentModelName }}</span>
                                         </div>
                                     </div>
 
@@ -940,7 +959,7 @@
         
         <!-- Footer -->
         <footer class="bg-white/80 backdrop-blur-md border-t border-slate-200 py-4 text-center text-sm text-slate-500">
-            Made by <a href="https://kentxchang.blogspot.com/" target="_blank" class="text-violet-600 hover:underline font-bold">阿剛老師</a>
+            Made by <a href="https://kentxchang.blogspot.com/" target="_blank" class="text-violet-600 hover:underline font-bold">阿剛老師 V1.1</a>
         </footer>
     </div>
 
@@ -1012,13 +1031,27 @@
                             <p><i class="fa-solid fa-gear mr-1"></i> 申請後，將 API Key 貼到下方的輸入框即可自動儲存。</p>
                         </div>
                         <div class="relative">
-                            <input type="text" v-model="customApiKey" placeholder="在此貼上您的 Gemini API Key" 
+                            <input type="text" v-model="customApiKey" placeholder="在此貼上您的 Gemini API Key"
                                 class="w-full p-2 text-sm border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pr-16">
                             <transition name="fade">
                                 <span v-if="isApiKeySaved" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-green-600 font-bold flex items-center pointer-events-none">
                                     <i class="fa-solid fa-check mr-1.5"></i>已儲存
                                 </span>
                             </transition>
+                        </div>
+
+                        <!-- Model Selection -->
+                        <div v-if="customApiKey" class="mt-3">
+                            <label class="block text-xs font-bold text-slate-600 mb-2">
+                                <i class="fa-solid fa-robot mr-1"></i>選擇 AI 模型
+                            </label>
+                            <select v-model="selectedModel" class="w-full p-2 text-sm border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                                <option value="gemini-2.5-flash-preview-09-2025">Gemini 2.5 Flash (目前使用)</option>
+                                <option value="gemma-3-27b-it">Gemma 3 27B IT</option>
+                            </select>
+                            <p class="text-xs text-slate-500 mt-1.5">
+                                <i class="fa-solid fa-info-circle mr-1"></i>不同模型有不同的特性和效能，可依需求切換
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -1272,6 +1305,10 @@ service cloud.firestore {
                 </div>
                 <h3 class="text-2xl font-bold text-slate-800 mb-2">AI 生成中</h3>
                 <p class="text-slate-600 text-sm">正在使用 AI 為您生成內容，請稍候...</p>
+                <div class="mt-3 inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-violet-100 to-indigo-100 rounded-full">
+                    <i class="fa-solid fa-robot text-violet-600 mr-2 text-sm"></i>
+                    <span class="text-xs font-bold text-violet-700">{{ currentModelName }}</span>
+                </div>
                 <div class="mt-4 text-xs text-slate-400">
                     <i class="fa-solid fa-circle-notch fa-spin mr-1"></i>
                     這可能需要幾秒鐘時間
@@ -1298,15 +1335,52 @@ service cloud.firestore {
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 
+<!-- ============================================================================
+     Firebase 設定區 - 供「firebase設定工具.html」識別和更新
+     此區塊可透過 firebase設定工具.html 自動更新
+     ============================================================================ -->
+<script type="module">
+// ============================================================================
+// 【Firebase 設定區】- 備用設定（優先權最低）
+// ============================================================================
+// 使用方式：將下方六行 "demo" 直接取代為您的 Firebase 設定值
+//
+// 1. 前往 Firebase Console > 專案設定 > 一般設定
+// 2. 在「您的應用程式」區塊找到 firebaseConfig
+// 3. 複製對應的值，取代下方的 "demo"
+//
+// 優先順序：URL 參數 > localStorage > 此設定
+// 如果上述來源都沒有設定，才會使用這裡的值
+//
+// 注意：此設定區塊會被自動同步到下方的主程式區塊中
+// ============================================================================
+const __firebaseConfig = {
+  apiKey: "demo",
+  authDomain: "demo",
+  projectId: "demo",
+  storageBucket: "demo",
+  messagingSenderId: "demo",
+  appId: "demo1.1"
+};
+// ============================================================================
+
+// 將配置存儲到 window 對象，供主腳本使用
+window.__manualFirebaseConfig = __firebaseConfig;
+</script>
+
 <script>
 const { createApp, ref, reactive, computed, onMounted, nextTick, watch } = Vue;
 
 createApp({
     setup() {
-        // --- 程式碼設定區 ---
-        const manualConfig = {
-        //在這裡貼上六行firebase設定好的程式碼
-
+        // 從 window 對象讀取 Firebase 配置（由上方的 <script type="module"> 設定）
+        const manualConfig = window.__manualFirebaseConfig || {
+            apiKey: "demo",
+            authDomain: "demo",
+            projectId: "demo",
+            storageBucket: "demo",
+            messagingSenderId: "demo",
+            appId: "demo"
         };
 
         // --- Global Message Modal State ---
@@ -1358,6 +1432,7 @@ createApp({
         
         // Settings & AI
         const customApiKey = ref(localStorage.getItem('custom_api_key') || '');
+        const selectedModel = ref(localStorage.getItem('selected_model') || 'gemini-2.5-flash-preview-09-2025');
         const showSettingsModal = ref(false);
         const showConfigEdit = ref(false); 
         const showTutorialModal = ref(false);
@@ -1463,52 +1538,108 @@ createApp({
         });
 
         const initApp = async () => {
-            if (manualConfig && manualConfig.apiKey) {
-                initializeFirebase(manualConfig);
-                return;
-            }
-
             const urlParams = new URLSearchParams(window.location.search);
             const encryptedConfig = urlParams.get('config');
-            
+
+            // 優先順序 1: URL 參數最優先
             if (encryptedConfig) {
                 try {
                     const decoded = atob(encryptedConfig);
                     const configObj = JSON.parse(decoded);
                     localStorage.setItem('firebase_config', JSON.stringify(configObj));
+                    initializeFirebase(configObj);
                     // Clean URL, but preserve student mode
                     const cleanUrl = window.location.pathname + (urlParams.has('mode') ? '?mode=student' : '');
                     window.history.replaceState({}, document.title, cleanUrl);
-                } catch (e) { console.error("Config decode failed", e); }
+                    console.log("已從 URL 參數自動載入並套用 Firebase 設定。");
+                    return;
+                } catch (e) {
+                    console.error("URL config decode failed", e);
+                }
             }
 
+            // 優先順序 2: localStorage
             const storedConfig = localStorage.getItem('firebase_config');
             if (storedConfig) {
                 try {
                     const config = JSON.parse(storedConfig);
                     if (config && config.apiKey) {
                         initializeFirebase(config);
+                        console.log("已從 localStorage 自動載入並套用 Firebase 設定。");
+                        return;
                     }
-                } catch (e) { localStorage.removeItem('firebase_config'); }
+                } catch (e) {
+                    localStorage.removeItem('firebase_config');
+                    console.error("localStorage config parse failed", e);
+                }
             }
+
+            // 優先順序 3: 硬編碼設定（最低優先權）
+            // 檢查是否為有效的設定（非 demo 且不是以 demo 開頭）
+            if (manualConfig && manualConfig.apiKey &&
+                manualConfig.apiKey !== "demo" &&
+                !manualConfig.apiKey.startsWith("demo")) {
+                try {
+                    initializeFirebase(manualConfig);
+                    console.log("已從原始碼中的備用設定自動載入並套用 Firebase 設定。");
+                    return;
+                } catch (e) {
+                    console.error("manualConfig initialization failed", e);
+                }
+            }
+
+            // 如果沒有任何可用的設定，不做任何事（用戶需要手動設定）
+            console.log("尚未設定 Firebase，請在設定頁面中進行設定。");
         };
 
         const initializeFirebase = (config) => {
             try {
+                // 驗證配置完整性
+                const requiredFields = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+                const missingFields = requiredFields.filter(field => !config[field] || config[field] === 'demo');
+
+                if (missingFields.length > 0) {
+                    console.error("Firebase 配置不完整，缺少或未設定以下欄位:", missingFields);
+                    showAlert("配置錯誤", `Firebase 配置不完整，請檢查以下欄位：${missingFields.join(', ')}`, "error");
+                    isConfigured.value = false;
+                    return;
+                }
+
+                console.log("正在初始化 Firebase，配置:", {
+                    projectId: config.projectId,
+                    authDomain: config.authDomain,
+                    appId: config.appId
+                });
+
                 if (!firebase.apps.length) {
                     firebase.initializeApp(config);
+                } else {
+                    console.log("Firebase 已經初始化過了");
                 }
+
                 auth = firebase.auth();
                 db = firebase.firestore();
-                appId = config.appId; 
+                appId = config.appId;
 
                 auth.onAuthStateChanged((u) => {
                     if (u) {
                         user.value = u;
+                        console.log("使用者已登入:", u.uid);
                     } else {
+                        console.log("嘗試匿名登入...");
                         auth.signInAnonymously().catch((error) => {
                             console.error("Auth Failed", error);
-                            showAlert("錯誤", "Firebase 連線失敗", "error");
+                            console.error("錯誤碼:", error.code);
+                            console.error("錯誤訊息:", error.message);
+
+                            let errorMsg = "Firebase 認證失敗";
+                            if (error.code === 'auth/configuration-not-found') {
+                                errorMsg = "Firebase 配置錯誤，請確認：\n1. Firebase Authentication 已啟用\n2. 已啟用匿名登入\n3. 配置欄位正確";
+                            } else if (error.code === 'auth/operation-not-allowed') {
+                                errorMsg = "請在 Firebase Console 中啟用「匿名登入」功能";
+                            }
+
+                            showAlert("認證錯誤", errorMsg, "error");
                             isConfigured.value = false;
                         });
                     }
@@ -1521,14 +1652,27 @@ createApp({
                     } else {
                         activeQuizId.value = null;
                     }
+                }, (error) => {
+                    console.error("Firestore 監聽失敗:", error);
                 });
 
                 isConfigured.value = true;
                 showConfigEdit.value = false;
                 generateShareUrls(config);
+
+                console.log("Firebase 初始化完成");
             } catch (e) {
-                console.error(e);
-                showAlert("錯誤", "Firebase 初始化失敗", "error");
+                console.error("Firebase 初始化失敗:", e);
+                console.error("錯誤詳情:", e.code, e.message);
+
+                let errorMsg = "Firebase 初始化失敗";
+                if (e.code === 'app/duplicate-app') {
+                    errorMsg = "Firebase 已經初始化，請重新整理頁面";
+                } else if (e.message) {
+                    errorMsg = `Firebase 初始化失敗: ${e.message}`;
+                }
+
+                showAlert("錯誤", errorMsg, "error");
                 localStorage.removeItem('firebase_config');
                 isConfigured.value = false;
             }
@@ -1578,6 +1722,16 @@ createApp({
                 setTimeout(() => isApiKeySaved.value = false, 2000);
             }, 500);
         });
+
+        watch(selectedModel, (newValue) => {
+            localStorage.setItem('selected_model', newValue);
+        });
+
+        const getApiUrl = () => {
+            const key = customApiKey.value;
+            const model = selectedModel.value;
+            return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+        };
 
         const generateShareUrls = (config) => {
             const jsonStr = JSON.stringify(config);
@@ -1864,7 +2018,7 @@ service cloud.firestore {
             }
 
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${key}`;
+                const url = getApiUrl();
                 const resp = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1945,7 +2099,15 @@ service cloud.firestore {
             const hasQuestions = Object.values(readingConfig.pirlsLevels).some(level => level > 0);
             return hasContent && hasQuestions;
         });
-        
+
+        const currentModelName = computed(() => {
+            const modelMap = {
+                'gemini-2.5-flash-preview-09-2025': 'Gemini 2.5 Flash',
+                'gemma-3-27b-it': 'Gemma 3 27B IT'
+            };
+            return modelMap[selectedModel.value] || selectedModel.value;
+        });
+
         const handleTextFileUpload = async (event) => {
             const file = event.target.files[0];
             if (!file) return;
@@ -1998,7 +2160,7 @@ service cloud.firestore {
                     parts: [{ text: prompt }]
                 }];
 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${key}`;
+                const url = getApiUrl();
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -2084,7 +2246,7 @@ Output format must be a strict JSON Array without Markdown markers:
                     parts: [{ text: prompt }]
                 }];
 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${key}`;
+                const url = getApiUrl();
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -2629,7 +2791,7 @@ Output format must be a strict JSON Array without Markdown markers:
 
         return {
             configInput, isConfigured, parseAndSaveConfig,
-            customApiKey, showSettingsModal, showConfigEdit, showTutorialModal, shareUrl, studentShareUrl, isStudentView, openQrModal, closeQrModal, showQrModal, qrModalTitle, toggleSettings, resetConfig, copyShareUrl, copyRules, isApiKeySaved, checkConfigAndGo,
+            customApiKey, selectedModel, showSettingsModal, showConfigEdit, showTutorialModal, shareUrl, studentShareUrl, isStudentView, openQrModal, closeQrModal, showQrModal, qrModalTitle, toggleSettings, resetConfig, copyShareUrl, copyRules, isApiKeySaved, checkConfigAndGo,
             user, currentView, goToView,
             // Modal
             modalState, showAlert, showConfirm, handleConfirm, handleCancel,
@@ -2637,7 +2799,7 @@ Output format must be a strict JSON Array without Markdown markers:
             teacherPassword, verifyTeacher, quizzes, showCreateQuiz, createMode, openCreateModal, duplicateQuiz, editQuiz, editingQuizId,
             aiSourceText, aiImageBase64, isPdfLoading, isGenerating, manualInput, aiConfig, newQuiz, activeQuizId, selectedCategory, uniqueCategories, filteredQuizzes, getActiveQuizTitle,
             // Reading Comprehension
-            readingConfig, canGenerateReading, handleTextFileUpload, generateReadingComprehension, generatePassageFromTopic, generateReadingQuestions, getPirlsLevelName,
+            readingConfig, canGenerateReading, currentModelName, handleTextFileUpload, generateReadingComprehension, generatePassageFromTopic, generateReadingQuestions, getPirlsLevelName,
             // Question Editor
             showQuestionEditor, currentEditingQuestion, currentEditingQuestionIndex, addQuestion, editQuestion, saveQuestion, deleteQuestion,
             handleImageUpload, handlePdfUpload, generateQuestions, parseManualInput, saveQuiz, deleteQuiz, activateQuiz, deactivateQuiz, formatDate,
