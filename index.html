@@ -1360,12 +1360,13 @@ const __firebaseConfig = {
   projectId: "demo",
   storageBucket: "demo",
   messagingSenderId: "demo",
-  appId: "demo1.1"
+  appId: "demo"
 };
 // ============================================================================
 
 // 將配置存儲到 window 對象，供主腳本使用
 window.__manualFirebaseConfig = __firebaseConfig;
+console.log("Firebase 配置已載入到 window.__manualFirebaseConfig:", window.__manualFirebaseConfig);
 </script>
 
 <script>
@@ -1373,7 +1374,18 @@ const { createApp, ref, reactive, computed, onMounted, nextTick, watch } = Vue;
 
 createApp({
     setup() {
-        // 從 window 對象讀取 Firebase 配置（由上方的 <script type="module"> 設定）
+        // ============================================================================
+        // 【Firebase 設定區】- 備用設定（優先權最低）
+        // ============================================================================
+        // 使用方式：將下方六行 "demo" 直接取代為您的 Firebase 設定值
+        //
+        // 注意：此設定應與上方 <script type="module"> 中的設定保持一致
+        // firebase設定工具.html 會自動更新上方的設定區塊
+        // 優先順序：URL 參數 > localStorage > 此硬編碼設定
+        //
+        // 優先從 window.__manualFirebaseConfig 讀取（由上方的 <script type="module"> 設定）
+        // 如果不存在，則使用下方的備用配置
+        // ============================================================================
         const manualConfig = window.__manualFirebaseConfig || {
             apiKey: "demo",
             authDomain: "demo",
@@ -1382,6 +1394,7 @@ createApp({
             messagingSenderId: "demo",
             appId: "demo"
         };
+        // ============================================================================
 
         // --- Global Message Modal State ---
         const modalState = reactive({
@@ -1575,16 +1588,33 @@ createApp({
             }
 
             // 優先順序 3: 硬編碼設定（最低優先權）
-            // 檢查是否為有效的設定（非 demo 且不是以 demo 開頭）
-            if (manualConfig && manualConfig.apiKey &&
-                manualConfig.apiKey !== "demo" &&
-                !manualConfig.apiKey.startsWith("demo")) {
-                try {
-                    initializeFirebase(manualConfig);
-                    console.log("已從原始碼中的備用設定自動載入並套用 Firebase 設定。");
-                    return;
-                } catch (e) {
-                    console.error("manualConfig initialization failed", e);
+            // 重新檢查 window.__manualFirebaseConfig（可能在 module script 中設定）
+            const finalConfig = window.__manualFirebaseConfig || manualConfig;
+
+            console.log("檢查硬編碼配置:", finalConfig);
+            console.log("window.__manualFirebaseConfig:", window.__manualFirebaseConfig);
+
+            if (finalConfig && finalConfig.apiKey) {
+                // 真實的 Firebase API Key 通常是 39 字元，以 "AIza" 開頭
+                // 檢查 apiKey 是否不是 "demo" 且長度 > 10（避免測試用的假值）
+                const isValidApiKey = finalConfig.apiKey !== "demo" &&
+                                     finalConfig.apiKey.length > 10 &&
+                                     !finalConfig.apiKey.match(/^demo$/i);
+
+                console.log("apiKey 驗證:", {
+                    apiKey: finalConfig.apiKey,
+                    isValidApiKey: isValidApiKey,
+                    length: finalConfig.apiKey.length
+                });
+
+                if (isValidApiKey) {
+                    try {
+                        initializeFirebase(finalConfig);
+                        console.log("已從原始碼中的備用設定自動載入並套用 Firebase 設定。");
+                        return;
+                    } catch (e) {
+                        console.error("manualConfig initialization failed", e);
+                    }
                 }
             }
 
@@ -1596,11 +1626,21 @@ createApp({
             try {
                 // 驗證配置完整性
                 const requiredFields = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
-                const missingFields = requiredFields.filter(field => !config[field] || config[field] === 'demo');
+
+                // 檢查必要欄位是否存在且不為空
+                const missingFields = requiredFields.filter(field => !config[field] || config[field].trim() === '');
 
                 if (missingFields.length > 0) {
-                    console.error("Firebase 配置不完整，缺少或未設定以下欄位:", missingFields);
+                    console.error("Firebase 配置不完整，缺少以下欄位:", missingFields);
                     showAlert("配置錯誤", `Firebase 配置不完整，請檢查以下欄位：${missingFields.join(', ')}`, "error");
+                    isConfigured.value = false;
+                    return;
+                }
+
+                // 檢查 apiKey 是否看起來像真實的 Firebase API Key
+                if (config.apiKey === 'demo' || (config.apiKey.length < 20 && config.apiKey.toLowerCase().includes('demo'))) {
+                    console.error("Firebase apiKey 似乎未設定（仍為 demo 值）");
+                    showAlert("配置錯誤", "Firebase apiKey 似乎未設定，請填入真實的 Firebase 配置", "error");
                     isConfigured.value = false;
                     return;
                 }
