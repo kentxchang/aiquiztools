@@ -210,6 +210,26 @@
                         </button>
                     </div>
 
+                    <!-- 搜尋題庫 -->
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                        </div>
+                        <input
+                            v-model="searchQuery"
+                            type="text"
+                            placeholder="搜尋題庫標題..."
+                            class="w-full pl-11 pr-10 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition"
+                        >
+                        <button
+                            v-if="searchQuery"
+                            @click="searchQuery = ''"
+                            class="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 transition"
+                        >
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
                     <!-- 分類篩選器 -->
                     <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                         <button @click="selectedCategory = 'All'" 
@@ -1576,6 +1596,7 @@ createApp({
 
         // Category Filter
         const selectedCategory = ref('All');
+        const searchQuery = ref('');
 
         // Analytics
         const showAnalytics = ref(false);
@@ -1986,8 +2007,22 @@ service cloud.firestore {
         });
 
         const filteredQuizzes = computed(() => {
-            if (selectedCategory.value === 'All') return quizzes.value;
-            return quizzes.value.filter(q => q.category === selectedCategory.value);
+            let filtered = quizzes.value;
+
+            // 根據分類篩選
+            if (selectedCategory.value !== 'All') {
+                filtered = filtered.filter(q => q.category === selectedCategory.value);
+            }
+
+            // 根據搜尋關鍵字篩選
+            if (searchQuery.value.trim()) {
+                const query = searchQuery.value.trim().toLowerCase();
+                filtered = filtered.filter(q =>
+                    q.title.toLowerCase().includes(query)
+                );
+            }
+
+            return filtered;
         });
 
         // Computed property to get the active quiz title
@@ -2995,7 +3030,7 @@ Output format must be a strict JSON Array without Markdown markers:
             modalState, showAlert, showConfirm, handleConfirm, handleCancel,
             // Teacher
             teacherPassword, verifyTeacher, quizzes, showCreateQuiz, createMode, openCreateModal, duplicateQuiz, editQuiz, editingQuizId,
-            aiSourceText, aiImageBase64, isPdfLoading, isGenerating, manualInput, aiConfig, newQuiz, activeQuizId, selectedCategory, uniqueCategories, filteredQuizzes, getActiveQuizTitle,
+            aiSourceText, aiImageBase64, isPdfLoading, isGenerating, manualInput, aiConfig, newQuiz, activeQuizId, selectedCategory, searchQuery, uniqueCategories, filteredQuizzes, getActiveQuizTitle,
             // Reading Comprehension
             readingConfig, canGenerateReading, currentModelName, handleTextFileUpload, generateReadingComprehension, generatePassageFromTopic, generateReadingQuestions, getPirlsLevelName,
             // Question Editor
