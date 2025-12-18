@@ -263,6 +263,9 @@
                                 <button @click="duplicateQuiz(quiz)" class="px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100" title="複製題庫">
                                     <i class="fa-regular fa-clone"></i>
                                 </button>
+                                <button @click="openExportModal(quiz)" class="px-3 py-2 bg-green-50 text-green-600 rounded-lg text-sm font-medium hover:bg-green-100" title="匯出題庫CSV">
+                                    <i class="fa-solid fa-file-export"></i>
+                                </button>
                                 <button @click="viewAnalytics(quiz)" class="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-200" title="查看分析">
                                     <i class="fa-solid fa-chart-pie"></i>
                                 </button>
@@ -676,9 +679,23 @@
                                     
                                     <!-- Progress Bar -->
                                     <div class="w-full bg-slate-100 rounded-full h-2 mb-4 overflow-hidden">
-                                        <div class="h-2 rounded-full transition-all duration-1000" 
+                                        <div class="h-2 rounded-full transition-all duration-1000"
                                              :class="stat.rate >= 60 ? 'bg-green-500' : 'bg-red-500'"
                                              :style="{ width: stat.rate + '%' }"></div>
+                                    </div>
+
+                                    <!-- Options and Correct Answer -->
+                                    <div class="mb-4 space-y-2">
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                                            <div v-for="(opt, i) in stat.question.options" :key="i"
+                                                 class="px-3 py-2 rounded-lg border"
+                                                 :class="(i + 1) == stat.question.answer ? 'bg-green-50 border-green-300 text-green-800 font-bold' : 'bg-slate-50 border-slate-200 text-slate-700'">
+                                                <span class="font-semibold">{{ String.fromCharCode(65+i) }}.</span> {{ opt }}
+                                                <span v-if="(i + 1) == stat.question.answer" class="ml-2 text-xs">
+                                                    <i class="fa-solid fa-check-circle"></i> 正確答案
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <!-- Details (Expandable) -->
@@ -961,6 +978,67 @@
         <footer class="bg-white/80 backdrop-blur-md border-t border-slate-200 py-4 text-center text-sm text-slate-500">
             Made by <a href="https://kentxchang.blogspot.com/" target="_blank" class="text-violet-600 hover:underline font-bold">阿剛老師 V1.1</a>
         </footer>
+    </div>
+
+    <!-- Export Format Selection Modal -->
+    <div v-if="showExportModal" class="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+            <!-- Header -->
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-file-export text-green-600"></i>
+                    匯出題庫
+                </h3>
+                <button @click="showExportModal = false" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="p-6 space-y-3">
+                <p class="text-sm text-slate-600 mb-4">請選擇要匯出的格式：</p>
+
+                <button @click="exportQuizCSV('wordwall')" class="w-full p-4 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-xl text-left transition border border-blue-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-bold text-blue-900">Wordwall 格式</h4>
+                            <p class="text-xs text-blue-700 mt-1">題目 → 選項A-D → 答案數字</p>
+                        </div>
+                        <i class="fa-solid fa-download text-blue-600"></i>
+                    </div>
+                </button>
+
+                <button @click="exportQuizCSV('kahoot')" class="w-full p-4 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-xl text-left transition border border-purple-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-bold text-purple-900">Kahoot! 格式</h4>
+                            <p class="text-xs text-purple-700 mt-1">題目 → 選項A-D → 答案數字</p>
+                        </div>
+                        <i class="fa-solid fa-download text-purple-600"></i>
+                    </div>
+                </button>
+
+                <button @click="exportQuizCSV('publisher')" class="w-full p-4 bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-xl text-left transition border border-orange-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-bold text-orange-900">書商格式</h4>
+                            <p class="text-xs text-orange-700 mt-1">題目 → 答案數字 → 選項A-D</p>
+                        </div>
+                        <i class="fa-solid fa-download text-orange-600"></i>
+                    </div>
+                </button>
+
+                <button @click="exportQuizCSV('wayground')" class="w-full p-4 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-xl text-left transition border border-green-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-bold text-green-900">Wayground 格式</h4>
+                            <p class="text-xs text-green-700 mt-1">題目 → 選項A-D → 答案數字</p>
+                        </div>
+                        <i class="fa-solid fa-download text-green-600"></i>
+                    </div>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Settings Modal -->
@@ -2519,6 +2597,86 @@ Output format must be a strict JSON Array without Markdown markers:
             document.body.removeChild(link);
         };
 
+        // --- Quiz Export Functions ---
+        const showExportModal = ref(false);
+        const exportingQuiz = ref(null);
+
+        const openExportModal = (quiz) => {
+            exportingQuiz.value = quiz;
+            showExportModal.value = true;
+        };
+
+        const exportQuizCSV = (format) => {
+            if (!exportingQuiz.value) return;
+
+            const quiz = exportingQuiz.value;
+            let csvContent = "\uFEFF"; // BOM for Excel Chinese support
+
+            // Build CSV based on format
+            quiz.questions.forEach((q, index) => {
+                // Get options A-D
+                const optionA = q.options[0] || '';
+                const optionB = q.options[1] || '';
+                const optionC = q.options[2] || '';
+                const optionD = q.options[3] || '';
+
+                // Answer as number (1-4)
+                const answerNum = q.answer;
+
+                // Clean up text and wrap in quotes for CSV
+                const cleanText = (text) => {
+                    // Convert to string, remove newlines and extra spaces
+                    text = String(text).replace(/[\n\r]+/g, ' ').replace(/\s+/g, ' ').trim();
+                    // Escape double quotes by doubling them
+                    text = text.replace(/"/g, '""');
+                    // Always wrap in quotes for proper Excel parsing
+                    return '"' + text + '"';
+                };
+
+                const question = cleanText(q.title || q.question || '');
+                const optA = cleanText(optionA);
+                const optB = cleanText(optionB);
+                const optC = cleanText(optionC);
+                const optD = cleanText(optionD);
+
+                // Build row based on format
+                let row = '';
+
+                if (format === 'wordwall' || format === 'kahoot' || format === 'wayground') {
+                    // Format: 題目[Tab]選項A[Tab]選項B[Tab]選項C[Tab]選項D[Tab]答案數字
+                    row = `${question}\t${optA}\t${optB}\t${optC}\t${optD}\t${answerNum}`;
+                } else if (format === 'publisher') {
+                    // Format: 題目[Tab]答案數字[Tab]選項A[Tab]選項B[Tab]選項C[Tab]選項D
+                    row = `${question}\t${answerNum}\t${optA}\t${optB}\t${optC}\t${optD}`;
+                }
+
+                csvContent += row + "\n";
+            });
+
+            // Download CSV file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+
+            // Set filename based on format
+            const formatNames = {
+                'wordwall': 'Wordwall',
+                'kahoot': 'Kahoot',
+                'publisher': '書商格式',
+                'wayground': 'Wayground'
+            };
+            const formatName = formatNames[format] || format;
+            link.setAttribute("download", `${quiz.title}_${formatName}.csv`);
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Close modal
+            showExportModal.value = false;
+        };
+
         const viewStudentDetails = (result) => {
             selectedStudentResult.value = result;
         };
@@ -2845,6 +3003,8 @@ Output format must be a strict JSON Array without Markdown markers:
             handleImageUpload, handlePdfUpload, generateQuestions, parseManualInput, saveQuiz, deleteQuiz, activateQuiz, deactivateQuiz, formatDate,
             // Analytics
             viewAnalytics, showAnalytics, selectedAnalyticsQuiz, analyticsData, analyticsTab, questionStats, teacherHighlightedPassage, getScoreColor, selectedStudentResult, viewStudentDetails, closeStudentDetails, exportCSV,
+            // Quiz Export
+            showExportModal, exportingQuiz, openExportModal, exportQuizCSV,
             // Student
             studentName, selectedQuizId, startQuiz,
             activeQuiz, currentQuestionIndex, currentAnswer, selectAnswer, nextQuestion, prevQuestion, submitQuiz,
