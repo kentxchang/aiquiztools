@@ -83,6 +83,127 @@
         .passage-content .highlight-pink {
             cursor: pointer;
         }
+
+        /* Drag & Drop Matching Game Styles */
+        .matching-zone {
+            position: relative;
+            min-height: 180px;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 3px dashed #cbd5e1;
+            border-radius: 1.25rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .matching-zone-empty:hover {
+            border-color: #8b5cf6;
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+        }
+
+        .matching-zone-active {
+            border-color: #8b5cf6;
+            border-style: solid;
+            background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
+            transform: scale(1.02);
+        }
+
+        .matching-zone-complete {
+            border-color: #10b981;
+            border-style: solid;
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            box-shadow: 0 8px 24px rgba(16, 185, 129, 0.2);
+        }
+
+        .drag-card {
+            position: relative;
+            padding: 1rem;
+            border-radius: 0.875rem;
+            border: 2.5px solid;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .drag-card:hover {
+            transform: translateY(-3px) rotate(1deg);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .drag-card:active {
+            transform: rotate(3deg);
+            cursor: grabbing !important;
+        }
+
+        .drag-card-left {
+            background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+            border-color: #a78bfa;
+        }
+
+        .drag-card-right {
+            background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+            border-color: #93c5fd;
+        }
+
+        .drag-card-content {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            color: #334155;
+            font-weight: 500;
+            padding-left: 0.5rem;
+        }
+
+        /* Dragging state */
+        .dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+        }
+
+        @keyframes cardDrop {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .card-drop-animation {
+            animation: cardDrop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes zoneSuccess {
+            0%, 100% {
+                transform: scale(1);
+            }
+            25% {
+                transform: scale(1.05) rotate(2deg);
+            }
+            75% {
+                transform: scale(1.05) rotate(-2deg);
+            }
+        }
+
+        .zone-success-animation {
+            animation: zoneSuccess 0.6s ease-in-out;
+        }
+
+        /* Success animation */
+        @keyframes successBounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+
+        .animate-success {
+            animation: successBounce 0.5s ease-in-out;
+        }
     </style>
 </head>
 <body class="bg-indigo-50 min-h-screen text-slate-800">
@@ -261,7 +382,12 @@
                                         {{ quiz.category || '未分類' }}
                                     </span>
                                     <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded-md text-xs font-bold">
-                                        {{ quiz.questions.length }} 題
+                                        <template v-if="quiz.questionType === 'matching'">
+                                            {{ quiz.matchingPairs ? quiz.matchingPairs.length : 0 }} 組配對
+                                        </template>
+                                        <template v-else>
+                                            {{ quiz.questions ? quiz.questions.length : 0 }} 題
+                                        </template>
                                     </span>
                                 </div>
                                 <div class="flex gap-1">
@@ -325,6 +451,7 @@
                                         <select v-model="newQuiz.questionType" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500">
                                             <option value="multiple-choice">一般選擇題</option>
                                             <option value="reading-comprehension">閱讀測驗</option>
+                                            <option value="matching">配對題</option>
                                         </select>
                                     </div>
                                 </div>
@@ -446,6 +573,125 @@
                                     </div>
                                 </div>
 
+                                <!-- 配對題設定 -->
+                                <div v-if="newQuiz.questionType === 'matching'" class="space-y-4 animate-fade-in">
+                                    <!-- Tabs for Matching Questions -->
+                                    <div class="flex border-b border-slate-200">
+                                        <button @click="createMode = 'ai'" :class="{'border-violet-600 text-violet-600': createMode === 'ai', 'border-transparent text-slate-500': createMode !== 'ai'}" class="px-6 py-3 border-b-2 font-medium transition">AI 自動出題</button>
+                                        <button @click="createMode = 'manual'" :class="{'border-violet-600 text-violet-600': createMode === 'manual', 'border-transparent text-slate-500': createMode !== 'manual'}" class="px-6 py-3 border-b-2 font-medium transition">手動/貼上題庫</button>
+                                    </div>
+
+                                    <!-- AI Mode for Matching -->
+                                    <div v-if="createMode === 'ai'" class="space-y-4 animate-fade-in">
+                                        <div class="bg-violet-50 p-4 rounded-xl text-sm text-violet-700">
+                                            <i class="fa-solid fa-wand-magic-sparkles mr-2"></i>AI 將根據您提供的內容和配對方向生成配對題目。
+                                        </div>
+
+                                        <!-- 配對方向輸入 (選填) -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-2">配對方向 (選填)</label>
+                                            <input v-model="matchingConfig.direction" type="text" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500" placeholder="例如：事件因果配對、中英文配對、人物與事蹟配對...">
+                                            <p class="text-xs text-slate-500 mt-1">提示：描述配對的類型可以讓 AI 生成更精確的題目</p>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-2">文字/PDF 內容</label>
+                                            <textarea v-model="aiSourceText" class="w-full h-40 p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-violet-500" placeholder="在此輸入文字內容，AI 將根據內容生成配對題..."></textarea>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-2">或上傳圖片/PDF</label>
+                                            <div class="flex gap-2 flex-wrap">
+                                                <input type="file" @change="handleImageUpload" accept="image/*" class="hidden" id="matching-img-upload">
+                                                <label for="matching-img-upload" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg cursor-pointer hover:bg-slate-200 inline-flex items-center">
+                                                    <i class="fa-solid fa-image mr-2"></i>上傳圖片
+                                                </label>
+
+                                                <input type="file" @change="handlePdfUpload" accept="application/pdf" class="hidden" id="matching-pdf-upload">
+                                                <label for="matching-pdf-upload" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg cursor-pointer hover:bg-slate-200 inline-flex items-center">
+                                                    <i class="fa-solid fa-file-pdf mr-2"></i>上傳 PDF
+                                                </label>
+
+                                                <!-- 狀態顯示 -->
+                                                <span v-if="aiImageBase64" class="text-xs text-green-600 flex items-center bg-green-50 px-2 py-1 rounded"><i class="fa-solid fa-check mr-1"></i>圖片已載入</span>
+                                                <span v-if="isPdfLoading" class="text-xs text-violet-600 flex items-center bg-violet-50 px-2 py-1 rounded"><i class="fa-solid fa-circle-notch fa-spin mr-1"></i>PDF 解析中...</span>
+                                            </div>
+                                            <img v-if="aiImageBase64" :src="aiImageBase64" class="mt-2 h-32 object-contain rounded-lg border border-slate-200">
+                                        </div>
+
+                                        <div>
+                                            <label class="text-sm font-bold text-slate-700">配對題組數</label>
+                                            <input v-model.number="matchingConfig.pairCount" type="number" min="3" max="10" class="w-full mt-1 p-2 border rounded-lg">
+                                            <p class="text-xs text-slate-500 mt-1">建議 3-10 組配對</p>
+                                        </div>
+
+                                        <div class="flex items-center justify-between mb-2">
+                                            <div class="inline-flex items-center px-3 py-1.5 bg-violet-50 rounded-full">
+                                                <i class="fa-solid fa-robot text-violet-600 mr-2 text-xs"></i>
+                                                <span class="text-xs font-medium text-violet-700">使用模型: {{ currentModelName }}</span>
+                                            </div>
+                                        </div>
+
+                                        <button @click="generateMatchingQuestions" :disabled="isGenerating || isPdfLoading" class="w-full py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg disabled:opacity-50 transition">
+                                            <span v-if="isGenerating"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>AI 正在思考中...</span>
+                                            <span v-else><i class="fa-solid fa-robot mr-2"></i>開始 AI 出題 (覆蓋現有題目)</span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Manual Mode for Matching -->
+                                    <div v-if="createMode === 'manual'" class="space-y-4 animate-fade-in">
+                                        <div class="bg-yellow-50 p-4 rounded-xl text-sm text-yellow-800">
+                                            <p class="font-bold mb-1">格式說明 (每行一組配對，用 Tab 或 逗號 分隔)：</p>
+                                            <p>左側項目, 右側項目</p>
+                                            <p class="text-xs mt-2">例如：事件配對、詞彙配對、人物與事蹟配對等</p>
+                                        </div>
+                                        <textarea v-model="matchingManualInput" class="w-full h-64 p-3 border border-slate-200 rounded-xl font-mono text-sm leading-relaxed" placeholder="範例：
+玉山, 台灣最高峰
+黃河, 中國第二長河
+尼羅河, 世界最長河流之一
+富士山, 日本最高峰"></textarea>
+                                        <button @click="parseMatchingManualInput" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 transition">
+                                            解析並加入配對題 (Append)
+                                        </button>
+                                    </div>
+
+                                    <!-- Matching Preview -->
+                                    <div v-if="newQuiz.matchingPairs && newQuiz.matchingPairs.length > 0" class="mt-6 border-t border-slate-100 pt-6">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <h4 class="font-bold text-slate-700">配對組合 ({{ newQuiz.matchingPairs.length }} 組)</h4>
+                                            <button @click="addMatchingPair" class="text-sm bg-violet-100 text-violet-600 px-3 py-1.5 rounded-lg hover:bg-violet-200 font-bold transition">
+                                                <i class="fa-solid fa-plus mr-1"></i> 新增配對
+                                            </button>
+                                        </div>
+
+                                        <div class="space-y-3 max-h-80 overflow-y-auto pr-2 pb-2">
+                                            <div v-for="(pair, idx) in newQuiz.matchingPairs" :key="idx" class="p-4 bg-slate-50 rounded-xl border border-slate-100 group hover:border-violet-200 transition">
+                                                <div class="flex items-center justify-between mb-2">
+                                                    <span class="text-xs font-bold text-slate-500">配對 {{ idx + 1 }}</span>
+                                                    <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                                        <button @click="editMatchingPair(idx)" class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200">
+                                                            <i class="fa-solid fa-pen"></i> 編輯
+                                                        </button>
+                                                        <button @click="deleteMatchingPair(idx)" class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200">
+                                                            <i class="fa-solid fa-trash"></i> 刪除
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="grid grid-cols-2 gap-4">
+                                                    <div class="bg-white p-3 rounded-lg border border-slate-200">
+                                                        <div class="text-xs text-slate-500 mb-1">左側</div>
+                                                        <div class="font-medium">{{ pair.left }}</div>
+                                                    </div>
+                                                    <div class="bg-white p-3 rounded-lg border border-slate-200">
+                                                        <div class="text-xs text-slate-500 mb-1">右側</div>
+                                                        <div class="font-medium">{{ pair.right }}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Tabs (只在一般選擇題時顯示) -->
                                 <div v-if="newQuiz.questionType === 'multiple-choice'" class="flex border-b border-slate-200">
                                     <button @click="createMode = 'ai'" :class="{'border-violet-600 text-violet-600': createMode === 'ai', 'border-transparent text-slate-500': createMode !== 'ai'}" class="px-6 py-3 border-b-2 font-medium transition">AI 自動出題</button>
@@ -524,15 +770,15 @@
                                     </button>
                                 </div>
 
-                                <!-- Preview & Edit Area -->
-                                <div class="mt-6 border-t border-slate-100 pt-6">
+                                <!-- Preview & Edit Area (Only for non-matching questions) -->
+                                <div v-if="newQuiz.questionType !== 'matching'" class="mt-6 border-t border-slate-100 pt-6">
                                     <div class="flex justify-between items-center mb-4">
                                         <h4 class="font-bold text-slate-700">題目列表 ({{ newQuiz.questions.length }} 題)</h4>
                                         <button @click="addQuestion" class="text-sm bg-violet-100 text-violet-600 px-3 py-1.5 rounded-lg hover:bg-violet-200 font-bold transition">
                                             <i class="fa-solid fa-plus mr-1"></i> 新增題目
                                         </button>
                                     </div>
-                                    
+
                                     <div class="space-y-4 max-h-80 overflow-y-auto pr-2 pb-2">
                                         <div v-for="(q, idx) in newQuiz.questions" :key="idx" class="p-4 bg-slate-50 rounded-xl border border-slate-100 group hover:border-violet-200 transition">
                                             <div class="flex justify-between items-start">
@@ -548,7 +794,7 @@
                                                     <i class="fa-solid fa-layer-group mr-1"></i>{{ getPirlsLevelName(q.pirlsLevel) }}
                                                 </span>
                                             </div>
-                                            
+
                                             <div class="grid grid-cols-2 gap-2 mt-2 text-sm text-slate-600 pl-4">
                                                 <div v-for="(opt, i) in q.options" :key="i" :class="{'text-green-600 font-bold': (i + 1) == q.answer}">
                                                     {{ String.fromCharCode(65+i) }}. {{ opt }}
@@ -565,7 +811,9 @@
 
                             <div class="p-6 border-t border-slate-100 sticky bottom-0 bg-white flex justify-end gap-3">
                                 <button @click="showCreateQuiz = false" class="px-6 py-2 text-slate-500 font-medium hover:bg-slate-50 rounded-xl">取消</button>
-                                <button @click="saveQuiz" :disabled="newQuiz.questions.length === 0" class="px-6 py-2 bg-violet-600 text-white font-bold rounded-xl shadow-lg shadow-violet-200 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <button @click="saveQuiz"
+                                    :disabled="(newQuiz.questionType === 'matching' && newQuiz.matchingPairs.length === 0) || (newQuiz.questionType !== 'matching' && newQuiz.questions.length === 0)"
+                                    class="px-6 py-2 bg-violet-600 text-white font-bold rounded-xl shadow-lg shadow-violet-200 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed">
                                     {{ editingQuizId ? '更新題庫' : '儲存新題庫' }}
                                 </button>
                             </div>
@@ -685,7 +933,68 @@
 
                             <!-- Tab Content: Question Analysis -->
                             <div v-if="!selectedStudentResult && analyticsTab === 'question'" class="flex-grow overflow-y-auto space-y-4 animate-fade-in">
-                                <div v-for="stat in questionStats" :key="stat.index" class="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-sm transition">
+                                <!-- Matching Questions Analysis -->
+                                <div v-if="selectedAnalyticsQuiz.questionType === 'matching'" class="space-y-4">
+                                    <div class="bg-white border border-slate-200 rounded-xl p-5">
+                                        <h4 class="font-bold text-slate-800 text-lg mb-2">配對題分析</h4>
+                                        <p class="text-sm text-slate-500 mb-4">配對測驗為整體評分，下方為各組配對的正確率統計</p>
+                                    </div>
+
+                                    <div v-for="stat in matchingPairStats" :key="stat.index" class="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-sm transition">
+                                        <div class="flex justify-between items-start mb-3">
+                                            <h4 class="font-bold text-slate-800 text-lg flex-1 mr-4">
+                                                <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs mr-2">配對 {{ stat.index + 1 }}</span>
+                                            </h4>
+                                            <div class="text-right flex-shrink-0">
+                                                <span class="text-xs text-slate-500 block mb-1">答對率</span>
+                                                <span class="text-xl font-bold" :class="getScoreColor(stat.rate)">{{ stat.rate }}%</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Progress Bar -->
+                                        <div class="w-full bg-slate-100 rounded-full h-2 mb-4 overflow-hidden">
+                                            <div class="h-2 rounded-full transition-all duration-1000"
+                                                 :class="stat.rate >= 60 ? 'bg-green-500' : 'bg-red-500'"
+                                                 :style="{ width: stat.rate + '%' }"></div>
+                                        </div>
+
+                                        <!-- Pair Content -->
+                                        <div class="mb-4">
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                <div class="bg-violet-50 p-3 rounded-lg border border-violet-200">
+                                                    <div class="text-xs text-violet-600 mb-1 font-medium">左側項目</div>
+                                                    <div class="text-slate-800">{{ stat.pair.left }}</div>
+                                                </div>
+                                                <div class="bg-green-50 p-3 rounded-lg border border-green-200">
+                                                    <div class="text-xs text-green-600 mb-1 font-medium">
+                                                        <i class="fa-solid fa-check-circle mr-1"></i>右側項目 (正確答案)
+                                                    </div>
+                                                    <div class="text-slate-800 font-bold">{{ stat.pair.right }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Wrong Students List -->
+                                        <details class="group">
+                                            <summary class="flex items-center text-sm font-medium text-slate-500 cursor-pointer hover:text-violet-600 select-none">
+                                                <i class="fa-solid fa-chevron-right text-xs mr-2 transition-transform group-open:rotate-90"></i>
+                                                查看答錯名單 ({{ stat.wrongStudents.length }}人)
+                                            </summary>
+                                            <div class="mt-3 pl-6 pt-2 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                                                <div v-for="ws in stat.wrongStudents" :key="ws.name" class="text-sm bg-red-50 text-red-700 px-3 py-2 rounded-lg flex justify-between items-center">
+                                                    <span>{{ ws.name }}</span>
+                                                    <span class="font-bold bg-white px-2 rounded text-xs border border-red-100">{{ ws.choice }}</span>
+                                                </div>
+                                                <div v-if="stat.wrongStudents.length === 0" class="text-sm text-green-600 py-2">
+                                                    <i class="fa-solid fa-check-circle mr-1"></i> 全班答對，太棒了！
+                                                </div>
+                                            </div>
+                                        </details>
+                                    </div>
+                                </div>
+
+                                <!-- Multiple Choice Questions Analysis -->
+                                <div v-for="stat in questionStats" :key="stat.index" class="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-sm transition" v-if="selectedAnalyticsQuiz.questionType !== 'matching'">
                                     <div class="flex justify-between items-start mb-3">
                                         <h4 class="font-bold text-slate-800 text-lg flex-1 mr-4">
                                             <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs mr-2">Q{{ stat.index + 1 }}</span>
@@ -765,7 +1074,45 @@
                                 </div>
 
                                 <h4 class="text-lg font-bold text-slate-700 mb-3 border-l-4 border-violet-500 pl-3">學生答題詳情</h4>
-                                <div class="space-y-4">
+
+                                <!-- Matching Questions Details -->
+                                <div v-if="selectedAnalyticsQuiz.questionType === 'matching'" class="space-y-4">
+                                    <div v-for="(pair, leftIdx) in selectedAnalyticsQuiz.matchingPairs" :key="leftIdx" class="p-4 rounded-xl border bg-white"
+                                        :class="isMatchingCorrect(leftIdx, pair) ? 'border-green-100' : 'border-red-100'">
+
+                                        <div class="flex gap-3 mb-2">
+                                            <div class="mt-1 flex-shrink-0">
+                                                <i v-if="isMatchingCorrect(leftIdx, pair)" class="fa-solid fa-circle-check text-green-500 text-lg"></i>
+                                                <i v-else class="fa-solid fa-circle-xmark text-red-500 text-lg"></i>
+                                            </div>
+                                            <div class="flex-grow">
+                                                <h5 class="font-bold text-slate-800 text-base">配對 {{ leftIdx + 1 }}</h5>
+                                            </div>
+                                        </div>
+
+                                        <div class="ml-8 space-y-2 text-sm">
+                                            <div class="bg-violet-50 p-3 rounded-lg">
+                                                <span class="text-violet-600 font-medium block mb-1">左側項目</span>
+                                                <span class="text-slate-800">{{ pair.left }}</span>
+                                            </div>
+
+                                            <div class="bg-blue-50 p-3 rounded-lg">
+                                                <span class="text-blue-600 font-medium block mb-1">學生配對</span>
+                                                <span :class="isMatchingCorrect(leftIdx, pair) ? 'text-green-600 font-bold' : 'text-red-600 font-bold line-through'">
+                                                    {{ getStudentMatchingAnswer(leftIdx) || '未作答' }}
+                                                </span>
+                                            </div>
+
+                                            <div v-if="!isMatchingCorrect(leftIdx, pair)" class="bg-green-50 p-3 rounded-lg">
+                                                <span class="text-green-600 font-medium block mb-1">正確答案</span>
+                                                <span class="text-green-800 font-bold">{{ pair.right }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Multiple Choice Questions Details -->
+                                <div v-if="selectedAnalyticsQuiz.questionType !== 'matching'" class="space-y-4">
                                     <div v-for="(q, idx) in selectedAnalyticsQuiz.questions" :key="idx" class="p-4 rounded-xl border bg-white"
                                         :class="selectedStudentResult.answers[idx] == q.answer ? 'border-green-100' : 'border-red-100'">
                                         
@@ -832,17 +1179,30 @@
 
                 <!-- VIEW: Quiz Taking -->
                 <div v-else-if="currentView === 'quiz'" :class="activeQuiz.questionType === 'reading-comprehension' ? 'max-w-7xl mx-auto w-full' : 'max-w-2xl mx-auto w-full'">
-                    <!-- Header (Same for both types) -->
-                    <div class="mb-6 flex justify-between items-center">
+                    <!-- Header (For non-matching types) -->
+                    <div v-if="activeQuiz.questionType !== 'matching'" class="mb-6 flex justify-between items-center">
                         <span class="text-slate-500 font-medium">考生：{{ studentName }}</span>
                         <div class="text-sky-600 font-bold bg-sky-50 px-3 py-1 rounded-lg">
                             第 {{ currentQuestionIndex + 1 }} / {{ activeQuiz.questions.length }} 題
                         </div>
                     </div>
 
-                    <!-- Progress Bar (Same for both types) -->
-                    <div class="w-full bg-slate-200 rounded-full h-2 mb-8">
+                    <!-- Header for Matching -->
+                    <div v-if="activeQuiz.questionType === 'matching'" class="mb-6 flex justify-between items-center">
+                        <span class="text-slate-500 font-medium">考生：{{ studentName }}</span>
+                        <div class="text-violet-600 font-bold bg-violet-50 px-3 py-1 rounded-lg">
+                            配對測驗
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar (For non-matching types) -->
+                    <div v-if="activeQuiz.questionType !== 'matching'" class="w-full bg-slate-200 rounded-full h-2 mb-8">
                         <div class="bg-sky-500 h-2 rounded-full transition-all duration-500" :style="{ width: progressPercent + '%' }"></div>
+                    </div>
+
+                    <!-- Progress Bar for Matching -->
+                    <div v-if="activeQuiz.questionType === 'matching'" class="w-full bg-slate-200 rounded-full h-2 mb-8">
+                        <div class="bg-violet-500 h-2 rounded-full transition-all duration-500" :style="{ width: matchingProgress + '%' }"></div>
                     </div>
 
                     <!-- Reading Comprehension Layout -->
@@ -902,7 +1262,7 @@
                     </div>
 
                     <!-- Regular Multiple Choice Layout -->
-                    <div v-else class="bg-white p-6 sm:p-10 rounded-3xl shadow-lg border border-slate-100 mb-8 relative overflow-hidden">
+                    <div v-if="activeQuiz.questionType === 'multiple-choice'" class="bg-white p-6 sm:p-10 rounded-3xl shadow-lg border border-slate-100 mb-8 relative overflow-hidden">
                         <div class="absolute top-0 left-0 w-2 h-full bg-sky-500"></div>
                         <h3 class="text-xl sm:text-2xl font-bold text-slate-800 mb-8 leading-relaxed">
                             {{ activeQuiz.questions[currentQuestionIndex].title }}
@@ -922,8 +1282,125 @@
                         </div>
                     </div>
 
+                    <!-- Matching Questions Layout - Drag & Drop Style -->
+                    <div v-if="activeQuiz.questionType === 'matching'" class="relative">
+                        <!-- Game Header -->
+                        <div class="bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500 rounded-2xl p-6 mb-6 text-white shadow-xl">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h3 class="text-2xl font-bold flex items-center">
+                                        <i class="fa-solid fa-hand-pointer mr-3 animate-pulse"></i>
+                                        拖曳配對遊戲
+                                    </h3>
+                                    <p class="text-violet-100 text-sm mt-1">拖動卡片到配對區，將您認為正確的一組放在一起</p>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-3xl font-bold">{{ matchingZones.filter(zone => zone.cards.length === 2).length }}/{{ activeQuiz.matchingPairs.length }}</div>
+                                    <div class="text-xs text-violet-200">已完成</div>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="relative w-full h-3 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
+                                <div class="absolute h-full bg-gradient-to-r from-yellow-300 to-green-300 rounded-full transition-all duration-500 flex items-center justify-end"
+                                    :style="{ width: (matchingZones.filter(zone => zone.cards.length === 2).length / activeQuiz.matchingPairs.length * 100) + '%' }">
+                                    <span v-if="matchingZones.filter(zone => zone.cards.length === 2).length === activeQuiz.matchingPairs.length" class="text-xs font-bold text-green-800 mr-2 animate-bounce">🎉</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Instruction -->
+                        <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6 flex items-start">
+                            <i class="fa-solid fa-info-circle text-blue-500 text-xl mr-3 mt-0.5"></i>
+                            <div>
+                                <p class="text-blue-800 font-medium mb-1">操作說明</p>
+                                <p class="text-blue-600 text-sm">從下方卡片區拖動卡片到配對區，將您認為配對的放在同一格內，完成所有配對後送出答案</p>
+                            </div>
+                        </div>
+
+                        <!-- Matching Zones -->
+                        <div class="mb-6">
+                            <h4 class="text-lg font-bold text-slate-700 mb-4 flex items-center">
+                                <i class="fa-solid fa-layer-group mr-2 text-violet-500"></i>
+                                配對區
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div v-for="(zone, idx) in matchingZones" :key="'zone-'+idx"
+                                    @drop="handleDrop($event, idx)"
+                                    @dragover.prevent
+                                    @dragenter="handleDragEnter($event, idx)"
+                                    @dragleave="handleDragLeave($event, idx)"
+                                    :class="{
+                                        'matching-zone-active': dragOverZone === idx,
+                                        'matching-zone-empty': zone.cards.length === 0
+                                    }"
+                                    class="matching-zone">
+                                    <div class="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 text-white flex items-center justify-center font-bold text-sm shadow-lg z-10">
+                                        {{ idx + 1 }}
+                                    </div>
+
+                                    <!-- Empty State -->
+                                    <div v-if="zone.cards.length === 0" class="flex flex-col items-center justify-center h-full text-slate-400">
+                                        <i class="fa-solid fa-hand-point-up text-4xl mb-2 opacity-20"></i>
+                                        <p class="text-sm font-medium">拖曳卡片到此</p>
+                                    </div>
+
+                                    <!-- Cards in Zone -->
+                                    <div v-else class="grid gap-3" :class="zone.cards.length === 2 ? 'grid-cols-2' : 'grid-cols-1'">
+                                            <div v-for="card in zone.cards" :key="card.id"
+                                            @dragstart="handleDragStart($event, card)"
+                                            @dragend="handleDragEnd"
+                                            draggable="true"
+                                            :class="card.type === 'left' ? 'drag-card-left' : 'drag-card-right'"
+                                            class="drag-card group">
+                                            <div class="absolute -top-2 -left-2 w-6 h-6 rounded-full text-white flex items-center justify-center font-bold text-xs shadow-md z-10"
+                                                :class="card.type === 'left' ? 'bg-violet-500' : 'bg-indigo-500'">
+                                                {{ card.label }}
+                                            </div>
+                                            <div class="drag-card-content">{{ card.text }}</div>
+                                            <button @click="removeCardFromZone(idx, card.id)"
+                                                class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-all shadow-md opacity-0 group-hover:opacity-100">
+                                                <i class="fa-solid fa-times text-xs"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Available Cards -->
+                        <div>
+                            <h4 class="text-lg font-bold text-slate-700 mb-4 flex items-center">
+                                <i class="fa-solid fa-cards-blank mr-2 text-indigo-500"></i>
+                                卡片區
+                                <span class="ml-auto text-sm font-normal text-slate-500">剩餘 {{ availableCards.length }} 張</span>
+                            </h4>
+                            <div class="bg-gradient-to-br from-slate-50 to-indigo-50 rounded-2xl p-6 min-h-[200px] border-2 border-dashed border-slate-300">
+                                <div v-if="availableCards.length === 0" class="flex flex-col items-center justify-center h-40 text-slate-400">
+                                    <i class="fa-solid fa-check-circle text-5xl mb-3 text-green-400"></i>
+                                    <p class="text-lg font-medium text-green-600">所有卡片都已使用！</p>
+                                </div>
+                                <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                    <div v-for="card in availableCards" :key="card.id"
+                                        @dragstart="handleDragStart($event, card)"
+                                        @dragend="handleDragEnd"
+                                        draggable="true"
+                                        :class="card.type === 'left' ? 'drag-card-left' : 'drag-card-right'"
+                                        class="drag-card cursor-move group">
+                                        <div class="absolute -top-2 -left-2 w-7 h-7 rounded-full text-white flex items-center justify-center font-bold text-xs shadow-md z-10"
+                                            :class="card.type === 'left' ? 'bg-violet-500' : 'bg-indigo-500'">
+                                            {{ card.label }}
+                                        </div>
+                                        <div class="drag-card-content">{{ card.text }}</div>
+                                        <i class="fa-solid fa-grip-vertical absolute top-1/2 right-2 -translate-y-1/2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Navigation Buttons (Same for both types) -->
-                    <div class="flex justify-between">
+                    <div v-if="activeQuiz.questionType !== 'matching'" class="flex justify-between">
                         <button @click="prevQuestion" :disabled="currentQuestionIndex === 0" class="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-200 disabled:opacity-0 transition">上一題</button>
                         
                         <button v-if="currentQuestionIndex < activeQuiz.questions.length - 1" @click="nextQuestion" class="px-8 py-3 bg-sky-500 text-white rounded-xl font-bold shadow-lg shadow-sky-200 hover:bg-sky-600 transition">
@@ -931,6 +1408,24 @@
                         </button>
                         <button v-else @click="submitQuiz" class="px-8 py-3 bg-green-500 text-white rounded-xl font-bold shadow-lg shadow-green-200 hover:bg-green-600 transition">
                             提交試卷 <i class="fa-solid fa-check ml-2"></i>
+                        </button>
+                    </div>
+
+                    <!-- Matching Submit Button -->
+                    <div v-if="activeQuiz.questionType === 'matching'" class="flex justify-center mt-6">
+                        <button @click="submitMatchingQuiz"
+                            :disabled="matchingZones.filter(zone => zone.cards.length === 2).length < activeQuiz.matchingPairs.length"
+                            :class="matchingZones.filter(zone => zone.cards.length === 2).length === activeQuiz.matchingPairs.length ? 'bg-gradient-to-r from-green-500 to-emerald-500 shadow-green-200 hover:shadow-green-300 animate-pulse' : 'bg-gradient-to-r from-violet-500 to-purple-500 shadow-violet-200'"
+                            class="px-10 py-4 text-white rounded-2xl font-bold shadow-xl hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+                            <span v-if="matchingZones.filter(zone => zone.cards.length === 2).length === activeQuiz.matchingPairs.length" class="flex items-center">
+                                <i class="fa-solid fa-trophy mr-2 text-yellow-300"></i>
+                                完成配對！提交答案
+                                <i class="fa-solid fa-check ml-2"></i>
+                            </span>
+                            <span v-else class="flex items-center">
+                                <i class="fa-solid fa-hourglass-half mr-2"></i>
+                                繼續配對中... ({{ matchingZones.filter(zone => zone.cards.length === 2).length }}/{{ activeQuiz.matchingPairs.length }})
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -949,7 +1444,9 @@
                         
                         <div class="p-8">
                             <h3 class="font-bold text-slate-700 mb-6 text-lg border-l-4 border-indigo-500 pl-3">詳細解析</h3>
-                            <div class="space-y-6">
+
+                            <!-- Multiple Choice Results -->
+                            <div v-if="activeQuiz.questionType !== 'matching'" class="space-y-6">
                                 <div v-for="(q, idx) in activeQuiz.questions" :key="idx" class="p-5 rounded-2xl border"
                                     :class="studentAnswers[idx] == q.answer ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'">
                                     <div class="flex gap-3 mb-3">
@@ -961,7 +1458,7 @@
                                             <h4 class="font-bold text-slate-800 text-lg">{{ idx + 1 }}. {{ q.title }}</h4>
                                         </div>
                                     </div>
-                                    
+
                                     <div class="ml-8 space-y-2 text-sm">
                                         <div class="flex items-center gap-2">
                                             <span class="font-bold text-slate-500">您的答案：</span>
@@ -982,6 +1479,41 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Matching Results -->
+                            <div v-if="activeQuiz.questionType === 'matching'" class="space-y-4">
+                                <div v-for="(pair, leftIdx) in activeQuiz.matchingPairs" :key="leftIdx" class="p-5 rounded-2xl border"
+                                    :class="isStudentMatchingCorrect(leftIdx, pair) ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'">
+                                    <div class="flex gap-3 mb-3">
+                                        <div class="mt-1">
+                                            <i v-if="isStudentMatchingCorrect(leftIdx, pair)" class="fa-solid fa-circle-check text-green-500 text-xl"></i>
+                                            <i v-else class="fa-solid fa-circle-xmark text-red-500 text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-bold text-slate-800 text-lg">配對 {{ leftIdx + 1 }}</h4>
+                                        </div>
+                                    </div>
+
+                                    <div class="ml-8 space-y-3">
+                                        <div class="bg-violet-50 p-3 rounded-lg">
+                                            <span class="font-bold text-violet-600 block mb-1">左側項目</span>
+                                            <span class="text-slate-800">{{ pair.left }}</span>
+                                        </div>
+
+                                        <div class="bg-blue-50 p-3 rounded-lg">
+                                            <span class="font-bold text-blue-600 block mb-1">您的配對</span>
+                                            <span :class="isStudentMatchingCorrect(leftIdx, pair) ? 'text-green-700 font-bold' : 'text-red-700 font-bold line-through'">
+                                                {{ getStudentMatchingAnswerText(leftIdx) || '未作答' }}
+                                            </span>
+                                        </div>
+
+                                        <div v-if="!isStudentMatchingCorrect(leftIdx, pair)" class="bg-green-50 p-3 rounded-lg">
+                                            <span class="font-bold text-green-600 block mb-1">正確答案</span>
+                                            <span class="text-green-800 font-bold">{{ pair.right }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="p-6 bg-slate-50 border-t border-slate-100 text-center">
                             <button @click="goToView('landing')" class="px-8 py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 transition">
@@ -996,7 +1528,7 @@
         
         <!-- Footer -->
         <footer class="bg-white/80 backdrop-blur-md border-t border-slate-200 py-4 text-center text-sm text-slate-500">
-            Made by <a href="https://kentxchang.blogspot.com/" target="_blank" class="text-violet-600 hover:underline font-bold">阿剛老師 V1.1</a>
+            Made by <a href="https://kentxchang.blogspot.com/" target="_blank" class="text-violet-600 hover:underline font-bold">阿剛老師 V1.2</a>
         </footer>
     </div>
 
@@ -1016,47 +1548,77 @@
 
             <!-- Content -->
             <div class="p-6 space-y-3">
-                <p class="text-sm text-slate-600 mb-4">請選擇要匯出的格式：</p>
+                <!-- Matching Quiz Export Options -->
+                <template v-if="exportingQuiz && exportingQuiz.questionType === 'matching'">
+                    <p class="text-sm text-slate-600 mb-4">請選擇配對題匯出格式：</p>
 
-                <button @click="exportQuizCSV('wordwall')" class="w-full p-4 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-xl text-left transition border border-blue-200">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h4 class="font-bold text-blue-900">Wordwall 格式</h4>
-                            <p class="text-xs text-blue-700 mt-1">題目 → 選項A-D → 答案數字</p>
+                    <button @click="exportQuizCSV('matching-left-right')" class="w-full p-4 bg-gradient-to-r from-violet-50 to-violet-100 hover:from-violet-100 hover:to-violet-200 rounded-xl text-left transition border border-violet-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-bold text-violet-900">A欄在前，B欄在後</h4>
+                                <p class="text-xs text-violet-700 mt-1">每行格式：左側項目,右側項目</p>
+                                <p class="text-xs text-violet-700">例如：apple,蘋果</p>
+                            </div>
+                            <i class="fa-solid fa-download text-violet-600"></i>
                         </div>
-                        <i class="fa-solid fa-download text-blue-600"></i>
-                    </div>
-                </button>
+                    </button>
 
-                <button @click="exportQuizCSV('kahoot')" class="w-full p-4 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-xl text-left transition border border-purple-200">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h4 class="font-bold text-purple-900">Kahoot! 格式</h4>
-                            <p class="text-xs text-purple-700 mt-1">題目 → 選項A-D → 答案數字</p>
+                    <button @click="exportQuizCSV('matching-right-left')" class="w-full p-4 bg-gradient-to-r from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-200 rounded-xl text-left transition border border-indigo-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-bold text-indigo-900">B欄在前，A欄在後</h4>
+                                <p class="text-xs text-indigo-700 mt-1">每行格式：右側項目,左側項目</p>
+                                <p class="text-xs text-indigo-700">例如：蘋果,apple</p>
+                            </div>
+                            <i class="fa-solid fa-download text-indigo-600"></i>
                         </div>
-                        <i class="fa-solid fa-download text-purple-600"></i>
-                    </div>
-                </button>
+                    </button>
+                </template>
 
-                <button @click="exportQuizCSV('publisher')" class="w-full p-4 bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-xl text-left transition border border-orange-200">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h4 class="font-bold text-orange-900">書商格式</h4>
-                            <p class="text-xs text-orange-700 mt-1">題目 → 答案數字 → 選項A-D</p>
-                        </div>
-                        <i class="fa-solid fa-download text-orange-600"></i>
-                    </div>
-                </button>
+                <!-- Multiple Choice Quiz Export Options -->
+                <template v-else>
+                    <p class="text-sm text-slate-600 mb-4">請選擇要匯出的格式：</p>
 
-                <button @click="exportQuizCSV('wayground')" class="w-full p-4 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-xl text-left transition border border-green-200">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h4 class="font-bold text-green-900">Wayground 格式</h4>
-                            <p class="text-xs text-green-700 mt-1">題目 → 選項A-D → 答案數字</p>
+                    <button @click="exportQuizCSV('wordwall')" class="w-full p-4 bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 rounded-xl text-left transition border border-blue-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-bold text-blue-900">Wordwall 格式</h4>
+                                <p class="text-xs text-blue-700 mt-1">題目 → 選項A-D → 答案數字</p>
+                            </div>
+                            <i class="fa-solid fa-download text-blue-600"></i>
                         </div>
-                        <i class="fa-solid fa-download text-green-600"></i>
-                    </div>
-                </button>
+                    </button>
+
+                    <button @click="exportQuizCSV('kahoot')" class="w-full p-4 bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-xl text-left transition border border-purple-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-bold text-purple-900">Kahoot! 格式</h4>
+                                <p class="text-xs text-purple-700 mt-1">題目 → 選項A-D → 答案數字</p>
+                            </div>
+                            <i class="fa-solid fa-download text-purple-600"></i>
+                        </div>
+                    </button>
+
+                    <button @click="exportQuizCSV('publisher')" class="w-full p-4 bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-xl text-left transition border border-orange-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-bold text-orange-900">書商格式</h4>
+                                <p class="text-xs text-orange-700 mt-1">題目 → 答案數字 → 選項A-D</p>
+                            </div>
+                            <i class="fa-solid fa-download text-orange-600"></i>
+                        </div>
+                    </button>
+
+                    <button @click="exportQuizCSV('wayground')" class="w-full p-4 bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 rounded-xl text-left transition border border-green-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h4 class="font-bold text-green-900">Wayground 格式</h4>
+                                <p class="text-xs text-green-700 mt-1">題目 → 選項A-D → 答案數字</p>
+                            </div>
+                            <i class="fa-solid fa-download text-green-600"></i>
+                        </div>
+                    </button>
+                </template>
             </div>
         </div>
     </div>
@@ -1468,7 +2030,7 @@ console.log("Firebase 配置已載入到 window.__manualFirebaseConfig:", window
 </script>
 
 <script>
-const { createApp, ref, reactive, computed, onMounted, nextTick, watch } = Vue;
+const { createApp, ref, reactive, computed, onMounted, nextTick, watch, getCurrentInstance } = Vue;
 
 createApp({
     setup() {
@@ -1568,14 +2130,17 @@ createApp({
         const isGenerating = ref(false);
         const manualInput = ref('');
         const aiConfig = reactive({ easy: 2, medium: 2, hard: 1 });
-        const newQuiz = reactive({ 
-            title: '', 
-            category: '', 
+        const matchingConfig = reactive({ direction: '', pairCount: 5 });
+        const matchingManualInput = ref('');
+        const newQuiz = reactive({
+            title: '',
+            category: '',
             questions: [],
             questionType: 'multiple-choice',
-            readingPassage: '' // For reading comprehension
+            readingPassage: '', // For reading comprehension
+            matchingPairs: [] // For matching questions
         });
-        
+
         // Reading comprehension configuration
         const readingConfig = reactive({
             textSource: 'paste', // 'paste', 'upload', 'topic'
@@ -1614,6 +2179,14 @@ createApp({
         const studentAnswers = ref([]);
         const currentAnswer = ref(null);
         const score = ref(0);
+
+        // Matching Questions State (Drag & Drop)
+        const allCards = ref([]); // All available cards
+        const matchingZones = ref([]); // Zones for matching pairs
+        const draggedCard = ref(null); // Currently dragged card
+        const dragOverZone = ref(null); // Zone being dragged over
+        const completedPairs = ref([]); // Completed matching pairs
+        const studentMatchingResults = ref({}); // Store matching results for display on result page
 
         // Firebase Refs
         let db = null;
@@ -2228,6 +2801,131 @@ service cloud.firestore {
             }
         };
 
+        // Matching Questions Functions
+        const generateMatchingQuestions = async () => {
+            if (!aiSourceText.value && !aiImageBase64.value) {
+                showAlert("缺少內容", "請輸入文字或上傳圖片/PDF", "warning");
+                return;
+            }
+
+            isGenerating.value = true;
+            newQuiz.matchingPairs = [];
+
+            const key = customApiKey.value;
+            if (!key) {
+                showAlert("API Key 缺失", "請先在設定中輸入您的 Gemini API Key", "warning");
+                isGenerating.value = false;
+                return;
+            }
+
+            const directionHint = matchingConfig.direction ? `\n配對方向提示: ${matchingConfig.direction}` : '';
+            const prompt = `
+                你是一位專業教師。請根據提供的內容，生成配對題目。${directionHint}
+
+                需求設定:
+                - 配對組數: ${matchingConfig.pairCount}
+                - 語言: 繁體中文 (Traditional Chinese)
+
+                輸出格式必須是嚴格的 JSON Array，不要 Markdown 標記，格式如下:
+                [
+                    {
+                        "left": "左側項目",
+                        "right": "右側項目（正確配對）"
+                    }
+                ]
+
+                請確保配對有意義，並且左右項目相互對應。
+            `;
+
+            const contents = [{
+                parts: [{ text: prompt }]
+            }];
+
+            if (aiSourceText.value) contents[0].parts.push({ text: `文本內容:\n${aiSourceText.value}` });
+            if (aiImageBase64.value) {
+                const base64Data = aiImageBase64.value.split(',')[1];
+                contents[0].parts.push({
+                    inlineData: { mimeType: "image/jpeg", data: base64Data }
+                });
+            }
+
+            try {
+                const url = getApiUrl();
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents })
+                });
+
+                const data = await resp.json();
+
+                if (data.error) throw new Error(data.error.message);
+
+                let text = data.candidates[0].content.parts[0].text;
+                text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+                const pairs = JSON.parse(text);
+                newQuiz.matchingPairs = pairs;
+                showAlert("生成成功", `成功生成 ${pairs.length} 組配對題`, "success");
+            } catch (e) {
+                console.error(e);
+                showAlert("生成失敗", "AI 出題失敗: " + e.message, "error");
+            } finally {
+                isGenerating.value = false;
+            }
+        };
+
+        const parseMatchingManualInput = () => {
+            const lines = matchingManualInput.value.split('\n').filter(l => l.trim());
+            const parsedPairs = [];
+
+            lines.forEach(line => {
+                const parts = line.split(/[\t,]/).map(p => p.trim());
+                if (parts.length >= 2) {
+                    parsedPairs.push({
+                        left: parts[0],
+                        right: parts[1]
+                    });
+                }
+            });
+
+            if (parsedPairs.length === 0) {
+                showAlert("解析錯誤", "格式無法解析，請檢查分隔符號", "error");
+            } else {
+                newQuiz.matchingPairs.push(...parsedPairs);
+                showAlert("解析成功", `成功加入 ${parsedPairs.length} 組配對`, "success");
+                matchingManualInput.value = '';
+            }
+        };
+
+        const addMatchingPair = () => {
+            newQuiz.matchingPairs.push({ left: '新項目', right: '新配對' });
+        };
+
+        const editMatchingPair = (index) => {
+            const pair = newQuiz.matchingPairs[index];
+            const newLeft = prompt('編輯左側項目:', pair.left);
+            if (newLeft !== null) {
+                const newRight = prompt('編輯右側項目:', pair.right);
+                if (newRight !== null) {
+                    pair.left = newLeft;
+                    pair.right = newRight;
+                }
+            }
+        };
+
+        const deleteMatchingPair = (index) => {
+            showConfirm(
+                '確認刪除',
+                '確定要刪除這組配對嗎？',
+                'warning',
+                () => {
+                    newQuiz.matchingPairs.splice(index, 1);
+                    showAlert('刪除成功', '配對已刪除', 'success');
+                }
+            );
+        };
+
         const openCreateModal = () => {
             editingQuizId.value = null; // Reset editing state
             newQuiz.title = '';
@@ -2235,14 +2933,19 @@ service cloud.firestore {
             newQuiz.questions = [];
             newQuiz.questionType = 'multiple-choice';
             newQuiz.readingPassage = '';
+            newQuiz.matchingPairs = [];
             aiSourceText.value = '';
             aiImageBase64.value = '';
             manualInput.value = '';
+            matchingManualInput.value = '';
             // Reset reading config
             readingConfig.textSource = 'paste';
             readingConfig.topic = '';
             readingConfig.language = '繁中';
             readingConfig.pirlsLevels = { retrieval: 2, inference: 2, interpretation: 1, evaluation: 1 };
+            // Reset matching config
+            matchingConfig.direction = '';
+            matchingConfig.pairCount = 5;
             showCreateQuiz.value = true;
         };
         
@@ -2445,12 +3148,14 @@ Output format must be a strict JSON Array without Markdown markers:
             newQuiz.questionType = quiz.questionType || 'multiple-choice';
             newQuiz.readingPassage = quiz.readingPassage || '';
             newQuiz.questions = JSON.parse(JSON.stringify(quiz.questions)); // Deep copy to prevent mutating original before save
-            
+            newQuiz.matchingPairs = quiz.matchingPairs ? JSON.parse(JSON.stringify(quiz.matchingPairs)) : [];
+
             // Clear source inputs as we are editing existing result
             aiSourceText.value = '';
             aiImageBase64.value = '';
             manualInput.value = '';
-            
+            matchingManualInput.value = '';
+
             showCreateQuiz.value = true;
         };
 
@@ -2461,15 +3166,17 @@ Output format must be a strict JSON Array without Markdown markers:
             newQuiz.questionType = quiz.questionType || 'multiple-choice';
             newQuiz.readingPassage = quiz.readingPassage || '';
             newQuiz.questions = JSON.parse(JSON.stringify(quiz.questions));
+            newQuiz.matchingPairs = quiz.matchingPairs ? JSON.parse(JSON.stringify(quiz.matchingPairs)) : [];
             showCreateQuiz.value = true;
-            aiSourceText.value = ''; 
+            aiSourceText.value = '';
             aiImageBase64.value = '';
             manualInput.value = '';
+            matchingManualInput.value = '';
         };
 
         const saveQuiz = async () => {
             if (!newQuiz.title) { showAlert("欄位缺失", "請輸入測驗標題", "warning"); return; }
-            
+
             try {
                 const quizData = {
                     title: newQuiz.title,
@@ -2477,6 +3184,7 @@ Output format must be a strict JSON Array without Markdown markers:
                     questionType: newQuiz.questionType,
                     readingPassage: newQuiz.readingPassage,
                     questions: newQuiz.questions,
+                    matchingPairs: newQuiz.matchingPairs || [],
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(), // Update timestamp on edit? Maybe better to keep original created, add updated. For simplicity, just update.
                     teacherId: user.value.uid
                 };
@@ -2496,6 +3204,7 @@ Output format must be a strict JSON Array without Markdown markers:
                 newQuiz.title = '';
                 newQuiz.category = '';
                 newQuiz.questions = [];
+                newQuiz.matchingPairs = [];
             } catch (e) {
                 showAlert("儲存失敗", e.message, "error");
             }
@@ -2647,46 +3356,67 @@ Output format must be a strict JSON Array without Markdown markers:
             const quiz = exportingQuiz.value;
             let csvContent = "\uFEFF"; // BOM for Excel Chinese support
 
-            // Build CSV based on format
-            quiz.questions.forEach((q, index) => {
-                // Get options A-D
-                const optionA = q.options[0] || '';
-                const optionB = q.options[1] || '';
-                const optionC = q.options[2] || '';
-                const optionD = q.options[3] || '';
+            // Clean up text and wrap in quotes for CSV
+            const cleanText = (text) => {
+                // Convert to string, remove newlines and extra spaces
+                text = String(text).replace(/[\n\r]+/g, ' ').replace(/\s+/g, ' ').trim();
+                // Escape double quotes by doubling them
+                text = text.replace(/"/g, '""');
+                // Always wrap in quotes for proper Excel parsing
+                return '"' + text + '"';
+            };
 
-                // Answer as number (1-4)
-                const answerNum = q.answer;
+            // Check if this is a matching quiz
+            if (quiz.questionType === 'matching' && quiz.matchingPairs) {
+                // For matching quizzes, export one pair per row
 
-                // Clean up text and wrap in quotes for CSV
-                const cleanText = (text) => {
-                    // Convert to string, remove newlines and extra spaces
-                    text = String(text).replace(/[\n\r]+/g, ' ').replace(/\s+/g, ' ').trim();
-                    // Escape double quotes by doubling them
-                    text = text.replace(/"/g, '""');
-                    // Always wrap in quotes for proper Excel parsing
-                    return '"' + text + '"';
-                };
-
-                const question = cleanText(q.title || q.question || '');
-                const optA = cleanText(optionA);
-                const optB = cleanText(optionB);
-                const optC = cleanText(optionC);
-                const optD = cleanText(optionD);
-
-                // Build row based on format
-                let row = '';
-
-                if (format === 'wordwall' || format === 'kahoot' || format === 'wayground') {
-                    // Format: 題目[Tab]選項A[Tab]選項B[Tab]選項C[Tab]選項D[Tab]答案數字
-                    row = `${question}\t${optA}\t${optB}\t${optC}\t${optD}\t${answerNum}`;
-                } else if (format === 'publisher') {
-                    // Format: 題目[Tab]答案數字[Tab]選項A[Tab]選項B[Tab]選項C[Tab]選項D
-                    row = `${question}\t${answerNum}\t${optA}\t${optB}\t${optC}\t${optD}`;
+                if (format === 'matching-left-right') {
+                    // A欄在前，B欄在後
+                    // Each row: left,right
+                    quiz.matchingPairs.forEach((pair) => {
+                        const row = `${cleanText(pair.left)},${cleanText(pair.right)}`;
+                        csvContent += row + "\n";
+                    });
+                } else if (format === 'matching-right-left') {
+                    // B欄在前，A欄在後
+                    // Each row: right,left
+                    quiz.matchingPairs.forEach((pair) => {
+                        const row = `${cleanText(pair.right)},${cleanText(pair.left)}`;
+                        csvContent += row + "\n";
+                    });
                 }
+            } else {
+                // Build CSV based on format for multiple choice questions
+                quiz.questions.forEach((q, index) => {
+                    // Get options A-D
+                    const optionA = q.options[0] || '';
+                    const optionB = q.options[1] || '';
+                    const optionC = q.options[2] || '';
+                    const optionD = q.options[3] || '';
 
-                csvContent += row + "\n";
-            });
+                    // Answer as number (1-4)
+                    const answerNum = q.answer;
+
+                    const question = cleanText(q.title || q.question || '');
+                    const optA = cleanText(optionA);
+                    const optB = cleanText(optionB);
+                    const optC = cleanText(optionC);
+                    const optD = cleanText(optionD);
+
+                    // Build row based on format
+                    let row = '';
+
+                    if (format === 'wordwall' || format === 'kahoot' || format === 'wayground') {
+                        // Format: 題目[Tab]選項A[Tab]選項B[Tab]選項C[Tab]選項D[Tab]答案數字
+                        row = `${question}\t${optA}\t${optB}\t${optC}\t${optD}\t${answerNum}`;
+                    } else if (format === 'publisher') {
+                        // Format: 題目[Tab]答案數字[Tab]選項A[Tab]選項B[Tab]選項C[Tab]選項D
+                        row = `${question}\t${answerNum}\t${optA}\t${optB}\t${optC}\t${optD}`;
+                    }
+
+                    csvContent += row + "\n";
+                });
+            }
 
             // Download CSV file
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -2699,7 +3429,9 @@ Output format must be a strict JSON Array without Markdown markers:
                 'wordwall': 'Wordwall',
                 'kahoot': 'Kahoot',
                 'publisher': '書商格式',
-                'wayground': 'Wayground'
+                'wayground': 'Wayground',
+                'matching-left-right': '配對題_A欄在前B欄在後',
+                'matching-right-left': '配對題_B欄在前A欄在後'
             };
             const formatName = formatNames[format] || format;
             link.setAttribute("download", `${quiz.title}_${formatName}.csv`);
@@ -2724,6 +3456,75 @@ Output format must be a strict JSON Array without Markdown markers:
             if (s >= 80) return 'text-green-600';
             if (s >= 60) return 'text-yellow-600';
             return 'text-red-600';
+        };
+
+        // Matching Questions Helper Functions
+        const getStudentMatchingAnswer = (pairIdx) => {
+            if (!selectedStudentResult.value) return null;
+
+            // Check new drag & drop structure
+            if (selectedStudentResult.value.matchingResults) {
+                const result = selectedStudentResult.value.matchingResults[pairIdx];
+                if (!result || !result.cards) return null;
+
+                // Find the right card (type === 'right')
+                const rightCard = result.cards.find(c => c.type === 'right');
+                return rightCard ? rightCard.text : null;
+            }
+
+            // Fallback: old structure
+            if (selectedStudentResult.value.matchingAnswers) {
+                const rightIdx = selectedStudentResult.value.matchingAnswers[pairIdx];
+                if (rightIdx === undefined) return null;
+
+                if (selectedStudentResult.value.shuffledRightItems) {
+                    return selectedStudentResult.value.shuffledRightItems[rightIdx] || null;
+                }
+
+                const quiz = selectedAnalyticsQuiz.value;
+                if (!quiz || !quiz.matchingPairs) return null;
+                return quiz.matchingPairs[rightIdx]?.right || `選項 ${String.fromCharCode(65 + rightIdx)}`;
+            }
+
+            return null;
+        };
+
+        const isMatchingCorrect = (pairIdx, pair) => {
+            if (!selectedStudentResult.value) return false;
+
+            // Check new drag & drop structure
+            if (selectedStudentResult.value.matchingResults) {
+                const result = selectedStudentResult.value.matchingResults[pairIdx];
+                if (!result || !result.cards || result.cards.length !== 2) return false;
+
+                // Check if both cards have the same pairIndex (which means they're a correct pair)
+                const card1 = result.cards[0];
+                const card2 = result.cards[1];
+
+                // Both cards should have pairIndex === pairIdx for this to be correct
+                return card1.text === pair.left && card2.text === pair.right ||
+                       card1.text === pair.right && card2.text === pair.left;
+            }
+
+            // Fallback: old structure
+            if (selectedStudentResult.value.matchingAnswers) {
+                const studentRightIdx = selectedStudentResult.value.matchingAnswers[pairIdx];
+                if (studentRightIdx === undefined) return false;
+
+                let selectedRight = null;
+                if (selectedStudentResult.value.shuffledRightItems) {
+                    selectedRight = selectedStudentResult.value.shuffledRightItems[studentRightIdx];
+                } else {
+                    const quiz = selectedAnalyticsQuiz.value;
+                    if (quiz && quiz.matchingPairs) {
+                        selectedRight = quiz.matchingPairs[studentRightIdx]?.right;
+                    }
+                }
+
+                return selectedRight === pair.right;
+            }
+
+            return false;
         };
 
         // --- Question Statistics Logic ---
@@ -2753,6 +3554,58 @@ Output format must be a strict JSON Array without Markdown markers:
                 return {
                     question: q,
                     index: idx,
+                    rate,
+                    wrongStudents
+                };
+            });
+        });
+
+        // Matching Pair Statistics
+        const matchingPairStats = computed(() => {
+            if (!selectedAnalyticsQuiz.value || !selectedAnalyticsQuiz.value.matchingPairs || !analyticsData.value.length) return [];
+
+            return selectedAnalyticsQuiz.value.matchingPairs.map((pair, pairIdx) => {
+                let correctCount = 0;
+                const wrongStudents = [];
+
+                analyticsData.value.forEach(res => {
+                    // Check if student got this pair correct
+                    let isCorrect = false;
+
+                    if (res.matchingResults) {
+                        // New drag & drop structure
+                        const result = res.matchingResults[pairIdx];
+                        if (result && result.cards && result.cards.length === 2) {
+                            const card1 = result.cards[0];
+                            const card2 = result.cards[1];
+                            isCorrect = (card1.text === pair.left && card2.text === pair.right) ||
+                                       (card1.text === pair.right && card2.text === pair.left);
+                        }
+                    } else if (res.matchingAnswers && res.shuffledRightItems) {
+                        // Old structure (fallback)
+                        const studentRightIdx = res.matchingAnswers[pairIdx];
+                        if (studentRightIdx !== undefined) {
+                            const selectedRight = res.shuffledRightItems[studentRightIdx];
+                            isCorrect = selectedRight === pair.right;
+                        }
+                    }
+
+                    if (isCorrect) {
+                        correctCount++;
+                    } else {
+                        wrongStudents.push({
+                            name: res.studentName,
+                            choice: '錯誤'
+                        });
+                    }
+                });
+
+                const total = analyticsData.value.length;
+                const rate = total === 0 ? 0 : Math.round((correctCount / total) * 100);
+
+                return {
+                    pair,
+                    index: pairIdx,
                     rate,
                     wrongStudents
                 };
@@ -2965,6 +3818,13 @@ Output format must be a strict JSON Array without Markdown markers:
                     currentAnswer.value = null;
                     highlights.value = []; // Clear highlights
                     nextHighlightId.value = 0; // Reset ID counter
+
+                    // Initialize matching questions if needed
+                    if (quizData.questionType === 'matching' && quizData.matchingPairs) {
+                        await nextTick();
+                        initializeMatchingGame();
+                    }
+
                     goToView('quiz');
                 } else {
                     showAlert("錯誤", "找不到該測驗，可能已被刪除。", "error");
@@ -2998,6 +3858,271 @@ Output format must be a strict JSON Array without Markdown markers:
             if (!activeQuiz.value) return 0;
             return ((currentQuestionIndex.value + 1) / activeQuiz.value.questions.length) * 100;
         });
+
+        // Computed property for available cards
+        const availableCards = computed(() => {
+            const usedCardIds = new Set();
+            matchingZones.value.forEach(zone => {
+                zone.cards.forEach(card => {
+                    usedCardIds.add(card.id);
+                });
+            });
+            return allCards.value.filter(card => !usedCardIds.has(card.id));
+        });
+
+        // Initialize matching game
+        const initializeMatchingGame = () => {
+            // Create all cards (left + right items)
+            const cards = [];
+            activeQuiz.value.matchingPairs.forEach((pair, idx) => {
+                // Left card
+                cards.push({
+                    id: `left-${idx}`,
+                    type: 'left',
+                    text: pair.left,
+                    label: idx + 1,
+                    pairIndex: idx
+                });
+                // Right card
+                cards.push({
+                    id: `right-${idx}`,
+                    type: 'right',
+                    text: pair.right,
+                    label: String.fromCharCode(65 + idx),
+                    pairIndex: idx
+                });
+            });
+
+            // Shuffle cards
+            allCards.value = cards.sort(() => Math.random() - 0.5);
+
+            // Create matching zones
+            matchingZones.value = Array.from({ length: activeQuiz.value.matchingPairs.length }, () => ({
+                cards: [],
+                isComplete: false
+            }));
+
+            completedPairs.value = [];
+        };
+
+        // Drag & Drop Functions
+        const handleDragStart = (event, card) => {
+            draggedCard.value = card;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', card.id);
+            setTimeout(() => {
+                event.target.classList.add('dragging');
+            }, 0);
+        };
+
+        const handleDragEnter = (event, zoneIndex) => {
+            event.preventDefault();
+            dragOverZone.value = zoneIndex;
+        };
+
+        const handleDragLeave = (event, zoneIndex) => {
+            // Check if we're actually leaving the zone (not just entering a child)
+            const rect = event.currentTarget.getBoundingClientRect();
+            const x = event.clientX;
+            const y = event.clientY;
+
+            if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
+                dragOverZone.value = null;
+            }
+        };
+
+        const handleDrop = (event, zoneIndex) => {
+            event.preventDefault();
+            dragOverZone.value = null;
+
+            if (!draggedCard.value) return;
+
+            const zone = matchingZones.value[zoneIndex];
+            const card = draggedCard.value;
+
+            // Check if zone already has this card
+            if (zone.cards.some(c => c.id === card.id)) {
+                draggedCard.value = null;
+                return;
+            }
+
+            // Check if zone is full (max 2 cards)
+            if (zone.cards.length >= 2) {
+                showAlert("配對區已滿", "每個配對區最多只能放2張卡片", "warning");
+                draggedCard.value = null;
+                return;
+            }
+
+            // Remove card from previous zone if it was in one
+            matchingZones.value.forEach(z => {
+                z.cards = z.cards.filter(c => c.id !== card.id);
+            });
+
+            // Add card to zone
+            zone.cards.push(card);
+
+            draggedCard.value = null;
+
+            // Remove dragging class from all elements
+            document.querySelectorAll('.dragging').forEach(el => {
+                el.classList.remove('dragging');
+            });
+        };
+
+        const handleDragEnd = (event) => {
+            event.target.classList.remove('dragging');
+            draggedCard.value = null;
+        };
+
+        const removeCardFromZone = (zoneIndex, cardId) => {
+            const zone = matchingZones.value[zoneIndex];
+            zone.cards = zone.cards.filter(c => c.id !== cardId);
+        };
+
+        // Matching Questions Functions (old - can be removed)
+        const getConnectionPath = (leftIdx, rightIdx) => {
+            // Get the DOM elements for the cards
+            const app = getCurrentInstance();
+            if (!app) return '';
+
+            const leftCardRef = app.refs['leftCard' + leftIdx];
+            const rightCardRef = app.refs['rightCard' + rightIdx];
+
+            if (!leftCardRef || !rightCardRef || !gameBoard.value) return '';
+
+            // Get the first element from the ref (Vue 3 returns arrays for v-for refs)
+            const leftCard = Array.isArray(leftCardRef) ? leftCardRef[0] : leftCardRef;
+            const rightCard = Array.isArray(rightCardRef) ? rightCardRef[0] : rightCardRef;
+
+            if (!leftCard || !rightCard) return '';
+
+            const boardRect = gameBoard.value.getBoundingClientRect();
+            const leftRect = leftCard.getBoundingClientRect();
+            const rightRect = rightCard.getBoundingClientRect();
+
+            // Calculate start and end points relative to the board
+            const startX = leftRect.right - boardRect.left;
+            const startY = leftRect.top + leftRect.height / 2 - boardRect.top;
+            const endX = rightRect.left - boardRect.left;
+            const endY = rightRect.top + rightRect.height / 2 - boardRect.top;
+
+            // Create a smooth cubic bezier curve
+            const controlPointOffset = (endX - startX) * 0.5;
+            const controlPoint1X = startX + controlPointOffset;
+            const controlPoint1Y = startY;
+            const controlPoint2X = endX - controlPointOffset;
+            const controlPoint2Y = endY;
+
+            return `M ${startX} ${startY} C ${controlPoint1X} ${controlPoint1Y}, ${controlPoint2X} ${controlPoint2Y}, ${endX} ${endY}`;
+        };
+
+        const selectLeftItem = (index) => {
+            selectedLeftIndex.value = index;
+        };
+
+        const selectRightItem = (rightIndex) => {
+            if (selectedLeftIndex.value === null) {
+                showAlert("請先選擇", "請先選擇左側項目", "info");
+                return;
+            }
+
+            // Add the matching with animation
+            matchingAnswers.value[selectedLeftIndex.value] = rightIndex;
+
+            // Play success sound effect (optional - you can add this later)
+            // new Audio('success.mp3').play();
+
+            selectedLeftIndex.value = null; // Reset selection
+        };
+
+        const removeMatching = (leftIndex) => {
+            delete matchingAnswers.value[leftIndex];
+        };
+
+        const submitMatchingQuiz = async () => {
+            const totalPairs = activeQuiz.value.matchingPairs.length;
+
+            // Count how many zones have 2 cards
+            const matchedCount = matchingZones.value.filter(zone => zone.cards.length === 2).length;
+
+            // Check if all pairs are matched
+            if (matchedCount < totalPairs) {
+                showAlert("尚未完成", `您還有 ${totalPairs - matchedCount} 組未配對`, "warning");
+                return;
+            }
+
+            // Prepare matching data for storage and calculate score
+            const matchingResults = {};
+            let correctCount = 0;
+
+            matchingZones.value.forEach((zone, zoneIdx) => {
+                if (zone.cards.length === 2) {
+                    const card1 = zone.cards[0];
+                    const card2 = zone.cards[1];
+
+                    // Check if they form a correct pair
+                    const isCorrectPair = (
+                        (card1.type === 'left' && card2.type === 'right' && card1.pairIndex === card2.pairIndex) ||
+                        (card1.type === 'right' && card2.type === 'left' && card1.pairIndex === card2.pairIndex)
+                    );
+
+                    if (isCorrectPair) {
+                        correctCount++;
+                    }
+
+                    // Store the pair using left card's pairIndex as key
+                    const leftCard = zone.cards.find(c => c.type === 'left');
+                    const pairIndex = leftCard ? leftCard.pairIndex : card1.pairIndex;
+
+                    matchingResults[pairIndex] = {
+                        zoneIndex: zoneIdx,
+                        cards: zone.cards.map(c => ({ id: c.id, type: c.type, text: c.text, label: c.label })),
+                        isCorrect: isCorrectPair
+                    };
+                }
+            });
+
+            // Calculate score based on correct pairs
+            score.value = Math.round((correctCount / totalPairs) * 100);
+
+            // Store results for display on result page
+            studentMatchingResults.value = matchingResults;
+
+            // Show result message
+            showAlert("已送出！", `您答對了 ${correctCount} / ${totalPairs} 題，得分：${score.value} 分`, "success");
+
+            await db.collection('results').add({
+                quizId: activeQuiz.value.id,
+                studentName: studentName.value,
+                score: score.value,
+                matchingResults: matchingResults,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            goToView('result');
+        };
+
+        // Student result helper functions for matching
+        const getStudentMatchingAnswerText = (pairIdx) => {
+            const result = studentMatchingResults.value[pairIdx];
+            if (!result || !result.cards) return null;
+
+            // Find the right card (type === 'right')
+            const rightCard = result.cards.find(c => c.type === 'right');
+            return rightCard ? rightCard.text : null;
+        };
+
+        const isStudentMatchingCorrect = (pairIdx, pair) => {
+            const result = studentMatchingResults.value[pairIdx];
+            if (!result || !result.cards || result.cards.length !== 2) return false;
+
+            // Check if both cards form the correct pair
+            const card1 = result.cards[0];
+            const card2 = result.cards[1];
+
+            return (card1.text === pair.left && card2.text === pair.right) ||
+                   (card1.text === pair.right && card2.text === pair.left);
+        };
 
         const submitQuiz = async () => {
              if (currentAnswer.value === null) { showAlert("請選擇", "請先選擇一個答案", "warning"); return; }
@@ -3033,17 +4158,24 @@ Output format must be a strict JSON Array without Markdown markers:
             aiSourceText, aiImageBase64, isPdfLoading, isGenerating, manualInput, aiConfig, newQuiz, activeQuizId, selectedCategory, searchQuery, uniqueCategories, filteredQuizzes, getActiveQuizTitle,
             // Reading Comprehension
             readingConfig, canGenerateReading, currentModelName, handleTextFileUpload, generateReadingComprehension, generatePassageFromTopic, generateReadingQuestions, getPirlsLevelName,
+            // Matching Questions
+            matchingConfig, matchingManualInput, generateMatchingQuestions, parseMatchingManualInput, addMatchingPair, editMatchingPair, deleteMatchingPair,
             // Question Editor
             showQuestionEditor, currentEditingQuestion, currentEditingQuestionIndex, addQuestion, editQuestion, saveQuestion, deleteQuestion,
             handleImageUpload, handlePdfUpload, generateQuestions, parseManualInput, saveQuiz, deleteQuiz, activateQuiz, deactivateQuiz, formatDate,
             // Analytics
-            viewAnalytics, showAnalytics, selectedAnalyticsQuiz, analyticsData, analyticsTab, questionStats, teacherHighlightedPassage, getScoreColor, selectedStudentResult, viewStudentDetails, closeStudentDetails, exportCSV,
+            viewAnalytics, showAnalytics, selectedAnalyticsQuiz, analyticsData, analyticsTab, questionStats, matchingPairStats, teacherHighlightedPassage, getScoreColor, selectedStudentResult, viewStudentDetails, closeStudentDetails, exportCSV,
+            getStudentMatchingAnswer, isMatchingCorrect,
             // Quiz Export
             showExportModal, exportingQuiz, openExportModal, exportQuizCSV,
             // Student
             studentName, selectedQuizId, startQuiz,
             activeQuiz, currentQuestionIndex, currentAnswer, selectAnswer, nextQuestion, prevQuestion, submitQuiz,
             progressPercent, score, studentAnswers,
+            // Matching Student (Drag & Drop)
+            allCards, matchingZones, draggedCard, dragOverZone, completedPairs, availableCards, studentMatchingResults,
+            initializeMatchingGame, handleDragStart, handleDragEnd, handleDragEnter, handleDragLeave, handleDrop, removeCardFromZone, submitMatchingQuiz,
+            getStudentMatchingAnswerText, isStudentMatchingCorrect,
             // Highlighter
             passageContainer, highlights, highlightedPassage, applyHighlight, handlePassageClick,
             // Logs
