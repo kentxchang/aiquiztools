@@ -1178,7 +1178,7 @@
                 </div>
 
                 <!-- VIEW: Quiz Taking -->
-                <div v-else-if="currentView === 'quiz'" :class="activeQuiz.questionType === 'reading-comprehension' ? 'max-w-7xl mx-auto w-full' : 'max-w-2xl mx-auto w-full'">
+                <div v-else-if="currentView === 'quiz'" :class="activeQuiz.questionType === 'reading-comprehension' ? 'max-w-7xl mx-auto w-full' : (activeQuiz.questionType === 'matching' ? 'w-[90%] mx-auto' : 'max-w-2xl mx-auto w-full')">
                     <!-- Header (For non-matching types) -->
                     <div v-if="activeQuiz.questionType !== 'matching'" class="mb-6 flex justify-between items-center">
                         <span class="text-slate-500 font-medium">考生：{{ studentName }}</span>
@@ -1292,7 +1292,7 @@
                                         <i class="fa-solid fa-hand-pointer mr-3 animate-pulse"></i>
                                         拖曳配對遊戲
                                     </h3>
-                                    <p class="text-violet-100 text-sm mt-1">拖動卡片到配對區，將您認為正確的一組放在一起</p>
+                                    <p class="text-violet-100 text-sm mt-1">將藍色右側卡片拖動到對應的紫色左側項目配對區</p>
                                 </div>
                                 <div class="text-right">
                                     <div class="text-3xl font-bold">{{ matchingZones.filter(zone => zone.cards.length === 2).length }}/{{ activeQuiz.matchingPairs.length }}</div>
@@ -1314,85 +1314,77 @@
                             <i class="fa-solid fa-info-circle text-blue-500 text-xl mr-3 mt-0.5"></i>
                             <div>
                                 <p class="text-blue-800 font-medium mb-1">操作說明</p>
-                                <p class="text-blue-600 text-sm">從下方卡片區拖動卡片到配對區，將您認為配對的放在同一格內，完成所有配對後送出答案</p>
+                                <p class="text-blue-600 text-sm">每個配對區已放置一個左側項目（紫色），請從右側卡片區拖動右側項目（藍色）到對應的配對區進行配對</p>
                             </div>
                         </div>
 
-                        <!-- Matching Zones -->
-                        <div class="mb-6">
-                            <h4 class="text-lg font-bold text-slate-700 mb-4 flex items-center">
-                                <i class="fa-solid fa-layer-group mr-2 text-violet-500"></i>
-                                配對區
-                            </h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div v-for="(zone, idx) in matchingZones" :key="'zone-'+idx"
-                                    @drop="handleDrop($event, idx)"
-                                    @dragover.prevent
-                                    @dragenter="handleDragEnter($event, idx)"
-                                    @dragleave="handleDragLeave($event, idx)"
-                                    :class="{
-                                        'matching-zone-active': dragOverZone === idx,
-                                        'matching-zone-empty': zone.cards.length === 0
-                                    }"
-                                    class="matching-zone">
-                                    <div class="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 text-white flex items-center justify-center font-bold text-sm shadow-lg z-10">
-                                        {{ idx + 1 }}
-                                    </div>
+                        <!-- Left-Right Layout Container -->
+                        <div class="flex flex-col lg:flex-row gap-6">
+                            <!-- Left Column: Matching Zones -->
+                            <div class="flex-1 lg:w-[60%]">
+                                <h4 class="text-lg font-bold text-slate-700 mb-4 flex items-center">
+                                    <i class="fa-solid fa-layer-group mr-2 text-violet-500"></i>
+                                    配對區
+                                </h4>
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div v-for="(zone, idx) in matchingZones" :key="'zone-'+idx"
+                                        @drop="handleDrop($event, idx)"
+                                        @dragover.prevent
+                                        @dragenter="handleDragEnter($event, idx)"
+                                        @dragleave="handleDragLeave($event, idx)"
+                                        :class="{
+                                            'matching-zone-active': dragOverZone === idx,
+                                            'matching-zone-empty': zone.cards.length === 1
+                                        }"
+                                        class="matching-zone">
+                                        <div class="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 text-white flex items-center justify-center font-bold text-sm shadow-lg z-10">
+                                            {{ idx + 1 }}
+                                        </div>
 
-                                    <!-- Empty State -->
-                                    <div v-if="zone.cards.length === 0" class="flex flex-col items-center justify-center h-full text-slate-400">
-                                        <i class="fa-solid fa-hand-point-up text-4xl mb-2 opacity-20"></i>
-                                        <p class="text-sm font-medium">拖曳卡片到此</p>
+                                        <!-- Cards in Zone -->
+                                        <div class="grid gap-3" :class="zone.cards.length === 2 ? 'grid-cols-2' : 'grid-cols-1'">
+                                                <div v-for="card in zone.cards" :key="card.id"
+                                                @dragstart="card.type === 'right' ? handleDragStart($event, card) : null"
+                                                @dragend="card.type === 'right' ? handleDragEnd : null"
+                                                :draggable="card.type === 'right'"
+                                                :class="[
+                                                    card.type === 'left' ? 'drag-card-left' : 'drag-card-right',
+                                                    card.type === 'left' ? 'cursor-default' : 'cursor-move'
+                                                ]"
+                                                class="drag-card group">
+                                                <div class="drag-card-content">{{ card.text }}</div>
+                                                <button v-if="card.type === 'right'" @click="removeCardFromZone(idx, card.id)"
+                                                    class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-all shadow-md opacity-0 group-hover:opacity-100">
+                                                    <i class="fa-solid fa-times text-xs"></i>
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
+                                </div>
+                            </div>
 
-                                    <!-- Cards in Zone -->
-                                    <div v-else class="grid gap-3" :class="zone.cards.length === 2 ? 'grid-cols-2' : 'grid-cols-1'">
-                                            <div v-for="card in zone.cards" :key="card.id"
+                            <!-- Right Column: Available Cards -->
+                            <div class="flex-1 lg:w-[40%]">
+                                <h4 class="text-lg font-bold text-slate-700 mb-4 flex items-center">
+                                    <i class="fa-solid fa-cards-blank mr-2 text-indigo-500"></i>
+                                    右側項目卡片區
+                                    <span class="ml-auto text-sm font-normal text-slate-500">剩餘 {{ availableCards.length }} 張</span>
+                                </h4>
+                                <div class="bg-gradient-to-br from-slate-50 to-indigo-50 rounded-2xl p-6 min-h-[400px] border-2 border-dashed border-slate-300 sticky top-24">
+                                    <div v-if="availableCards.length === 0" class="flex flex-col items-center justify-center h-40 text-slate-400">
+                                        <i class="fa-solid fa-check-circle text-5xl mb-3 text-green-400"></i>
+                                        <p class="text-lg font-medium text-green-600">所有卡片都已使用！</p>
+                                    </div>
+                                    <div v-else class="grid grid-cols-1 gap-3">
+                                        <div v-for="card in availableCards" :key="card.id"
                                             @dragstart="handleDragStart($event, card)"
                                             @dragend="handleDragEnd"
                                             draggable="true"
                                             :class="card.type === 'left' ? 'drag-card-left' : 'drag-card-right'"
-                                            class="drag-card group">
-                                            <div class="absolute -top-2 -left-2 w-6 h-6 rounded-full text-white flex items-center justify-center font-bold text-xs shadow-md z-10"
-                                                :class="card.type === 'left' ? 'bg-violet-500' : 'bg-indigo-500'">
-                                                {{ card.label }}
-                                            </div>
+                                            class="drag-card cursor-move group">
                                             <div class="drag-card-content">{{ card.text }}</div>
-                                            <button @click="removeCardFromZone(idx, card.id)"
-                                                class="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-all shadow-md opacity-0 group-hover:opacity-100">
-                                                <i class="fa-solid fa-times text-xs"></i>
-                                            </button>
+                                            <i class="fa-solid fa-grip-vertical absolute top-1/2 right-2 -translate-y-1/2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity"></i>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Available Cards -->
-                        <div>
-                            <h4 class="text-lg font-bold text-slate-700 mb-4 flex items-center">
-                                <i class="fa-solid fa-cards-blank mr-2 text-indigo-500"></i>
-                                卡片區
-                                <span class="ml-auto text-sm font-normal text-slate-500">剩餘 {{ availableCards.length }} 張</span>
-                            </h4>
-                            <div class="bg-gradient-to-br from-slate-50 to-indigo-50 rounded-2xl p-6 min-h-[200px] border-2 border-dashed border-slate-300">
-                                <div v-if="availableCards.length === 0" class="flex flex-col items-center justify-center h-40 text-slate-400">
-                                    <i class="fa-solid fa-check-circle text-5xl mb-3 text-green-400"></i>
-                                    <p class="text-lg font-medium text-green-600">所有卡片都已使用！</p>
-                                </div>
-                                <div v-else class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                                    <div v-for="card in availableCards" :key="card.id"
-                                        @dragstart="handleDragStart($event, card)"
-                                        @dragend="handleDragEnd"
-                                        draggable="true"
-                                        :class="card.type === 'left' ? 'drag-card-left' : 'drag-card-right'"
-                                        class="drag-card cursor-move group">
-                                        <div class="absolute -top-2 -left-2 w-7 h-7 rounded-full text-white flex items-center justify-center font-bold text-xs shadow-md z-10"
-                                            :class="card.type === 'left' ? 'bg-violet-500' : 'bg-indigo-500'">
-                                            {{ card.label }}
-                                        </div>
-                                        <div class="drag-card-content">{{ card.text }}</div>
-                                        <i class="fa-solid fa-grip-vertical absolute top-1/2 right-2 -translate-y-1/2 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity"></i>
                                     </div>
                                 </div>
                             </div>
@@ -1528,7 +1520,7 @@
         
         <!-- Footer -->
         <footer class="bg-white/80 backdrop-blur-md border-t border-slate-200 py-4 text-center text-sm text-slate-500">
-            Made by <a href="https://kentxchang.blogspot.com/" target="_blank" class="text-violet-600 hover:underline font-bold">阿剛老師 V1.2</a>
+            Made by <a href="https://kentxchang.blogspot.com/" target="_blank" class="text-violet-600 hover:underline font-bold">阿剛老師 V1.3</a>
         </footer>
     </div>
 
@@ -3872,11 +3864,13 @@ Output format must be a strict JSON Array without Markdown markers:
 
         // Initialize matching game
         const initializeMatchingGame = () => {
-            // Create all cards (left + right items)
-            const cards = [];
+            // Create left and right cards separately
+            const leftCards = [];
+            const rightCards = [];
+
             activeQuiz.value.matchingPairs.forEach((pair, idx) => {
                 // Left card
-                cards.push({
+                leftCards.push({
                     id: `left-${idx}`,
                     type: 'left',
                     text: pair.left,
@@ -3884,7 +3878,7 @@ Output format must be a strict JSON Array without Markdown markers:
                     pairIndex: idx
                 });
                 // Right card
-                cards.push({
+                rightCards.push({
                     id: `right-${idx}`,
                     type: 'right',
                     text: pair.right,
@@ -3893,14 +3887,16 @@ Output format must be a strict JSON Array without Markdown markers:
                 });
             });
 
-            // Shuffle cards
-            allCards.value = cards.sort(() => Math.random() - 0.5);
+            // Shuffle left cards for random placement
+            const shuffledLeftCards = leftCards.sort(() => Math.random() - 0.5);
 
-            // Create matching zones
-            matchingZones.value = Array.from({ length: activeQuiz.value.matchingPairs.length }, () => ({
-                cards: [],
-                isComplete: false
+            // Create matching zones with one left card in each zone
+            matchingZones.value = shuffledLeftCards.map(leftCard => ({
+                cards: [leftCard]
             }));
+
+            // Shuffle right cards for the available card area
+            allCards.value = rightCards.sort(() => Math.random() - 0.5);
 
             completedPairs.value = [];
         };
@@ -3940,25 +3936,29 @@ Output format must be a strict JSON Array without Markdown markers:
             const zone = matchingZones.value[zoneIndex];
             const card = draggedCard.value;
 
-            // Check if zone already has this card
+            // Only accept right cards (should already be enforced by draggable attribute)
+            if (card.type !== 'right') {
+                draggedCard.value = null;
+                return;
+            }
+
+            // Check if zone already has this exact card
             if (zone.cards.some(c => c.id === card.id)) {
                 draggedCard.value = null;
                 return;
             }
 
-            // Check if zone is full (max 2 cards)
-            if (zone.cards.length >= 2) {
-                showAlert("配對區已滿", "每個配對區最多只能放2張卡片", "warning");
-                draggedCard.value = null;
-                return;
-            }
-
-            // Remove card from previous zone if it was in one
+            // Remove this card from any other zone
             matchingZones.value.forEach(z => {
                 z.cards = z.cards.filter(c => c.id !== card.id);
             });
 
-            // Add card to zone
+            // If zone already has 2 cards (1 left + 1 right), remove the old right card
+            if (zone.cards.length >= 2) {
+                zone.cards = zone.cards.filter(c => c.type === 'left');
+            }
+
+            // Add the new right card to zone
             zone.cards.push(card);
 
             draggedCard.value = null;
