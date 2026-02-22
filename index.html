@@ -1520,7 +1520,7 @@
         
         <!-- Footer -->
         <footer class="bg-white/80 backdrop-blur-md border-t border-slate-200 py-4 text-center text-sm text-slate-500">
-            Made by <a href="https://kentxchang.blogspot.com/" target="_blank" class="text-violet-600 hover:underline font-bold">阿剛老師 V1.3</a>
+            Made by <a href="https://kentxchang.blogspot.com/" target="_blank" class="text-violet-600 hover:underline font-bold">阿剛老師 V1.4</a>
         </footer>
     </div>
 
@@ -1693,12 +1693,13 @@
                         </div>
 
                         <!-- Model Selection -->
-                        <div v-if="customApiKey" class="mt-3">
+                        <div class="mt-3">
                             <label class="block text-xs font-bold text-slate-600 mb-2">
                                 <i class="fa-solid fa-robot mr-1"></i>選擇 AI 模型
                             </label>
                             <select v-model="selectedModel" class="w-full p-2 text-sm border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                                <option value="gemini-2.5-flash-preview-09-2025">Gemini 2.5 Flash (目前使用)</option>
+                                <option value="gemini-2.5-flash">Gemini 2.5 Flash (穩定別名，免 Key 首選)</option>
+                                <option value="gemini-2.5-flash-preview-09-2025">Gemini 2.5 Flash Preview</option>
                                 <option value="gemma-3-27b-it">Gemma 3 27B IT</option>
                             </select>
                             <p class="text-xs text-slate-500 mt-1.5">
@@ -2039,12 +2040,12 @@ createApp({
         // 如果不存在，則使用下方的備用配置
         // ============================================================================
         const manualConfig = window.__manualFirebaseConfig || {
-            apiKey: "demo",
-            authDomain: "demo",
-            projectId: "demo",
-            storageBucket: "demo",
-            messagingSenderId: "demo",
-            appId: "demo"
+  apiKey: "demo",
+  authDomain: "demo",
+  projectId: "demo",
+  storageBucket: "demo",
+  messagingSenderId: "demo",
+  appId: "demo"
         };
         // ============================================================================
 
@@ -2097,7 +2098,7 @@ createApp({
         
         // Settings & AI
         const customApiKey = ref(localStorage.getItem('custom_api_key') || '');
-        const selectedModel = ref(localStorage.getItem('selected_model') || 'gemini-2.5-flash-preview-09-2025');
+        const selectedModel = ref(localStorage.getItem('selected_model') || 'gemini-2.5-flash');
         const showSettingsModal = ref(false);
         const showConfigEdit = ref(false); 
         const showTutorialModal = ref(false);
@@ -2433,8 +2434,15 @@ createApp({
 
         const getApiUrl = () => {
             const key = customApiKey.value;
-            const model = selectedModel.value;
-            return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+            let model = selectedModel.value;
+            
+            // 如果沒有 Key，強制使用穩定別名 gemini-2.5-flash 以便在 Canvas 免 Key 環境中使用
+            if (!key) {
+                model = 'gemini-2.5-flash';
+            }
+            
+            const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+            return key ? `${baseUrl}?key=${key}` : baseUrl;
         };
 
         const generateShareUrls = (config) => {
@@ -2696,10 +2704,9 @@ service cloud.firestore {
             newQuiz.questions = []; 
 
             const key = customApiKey.value;
+            // 免 Key 模式下仍繼續執行
             if (!key) { 
-                showAlert("API Key 缺失", "請先在設定中輸入您的 Gemini API Key", "warning"); 
-                isGenerating.value = false; 
-                return; 
+                console.log("免 Key 模式或在 Canvas 環境中運行");
             }
 
             const prompt = `
@@ -2804,10 +2811,9 @@ service cloud.firestore {
             newQuiz.matchingPairs = [];
 
             const key = customApiKey.value;
-            if (!key) {
-                showAlert("API Key 缺失", "請先在設定中輸入您的 Gemini API Key", "warning");
-                isGenerating.value = false;
-                return;
+            // 免 Key 模式下仍繼續執行
+            if (!key) { 
+                console.log("免 Key 模式或在 Canvas 環境中運行");
             }
 
             const directionHint = matchingConfig.direction ? `\n配對方向提示: ${matchingConfig.direction}` : '';
@@ -2950,10 +2956,13 @@ service cloud.firestore {
 
         const currentModelName = computed(() => {
             const modelMap = {
-                'gemini-2.5-flash-preview-09-2025': 'Gemini 2.5 Flash',
+                'gemini-2.5-flash': 'Gemini 2.5 Flash (穩定版)',
+                'gemini-2.5-flash-preview-09-2025': 'Gemini 2.5 Flash Preview',
                 'gemma-3-27b-it': 'Gemma 3 27B IT'
             };
-            return modelMap[selectedModel.value] || selectedModel.value;
+            let name = modelMap[selectedModel.value] || selectedModel.value;
+            if (!customApiKey.value) name += ' [免 Key 模式]';
+            return name;
         });
 
         const handleTextFileUpload = async (event) => {
@@ -2987,10 +2996,9 @@ service cloud.firestore {
             isGenerating.value = true;
             try {
                 const key = customApiKey.value;
-                if (!key) {
-                    showAlert("API Key 缺失", "請先在設定中輸入您的 Gemini API Key", "warning");
-                    isGenerating.value = false;
-                    return;
+                // 免 Key 模式下仍繼續執行
+                if (!key) { 
+                    console.log("免 Key 模式或在 Canvas 環境中運行");
                 }
 
                 // 語言映射
@@ -3036,10 +3044,9 @@ service cloud.firestore {
 
             try {
                 const key = customApiKey.value;
-                if (!key) {
-                    showAlert("API Key 缺失", "請先在設定中輸入您的 Gemini API Key", "warning");
-                    isGenerating.value = false;
-                    return;
+                // 免 Key 模式下仍繼續執行
+                if (!key) { 
+                    console.log("免 Key 模式或在 Canvas 環境中運行");
                 }
 
                 // 語言映射
