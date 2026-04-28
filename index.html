@@ -477,6 +477,7 @@
                                             <option value="reading-comprehension">閱讀測驗</option>
                                             <option value="literacy-group">素養題組</option>
                                             <option value="matching">配對題</option>
+                                            <option value="youtube">YouTube影片題</option>
                                         </select>
                                     </div>
                                 </div>
@@ -855,6 +856,75 @@
                                     </div>
                                 </div>
 
+                                <!-- YouTube影片題設定 -->
+                                <div v-if="newQuiz.questionType === 'youtube'" class="bg-red-50 p-6 rounded-xl space-y-4 animate-fade-in">
+                                    <div class="flex items-center mb-2">
+                                        <i class="fa-brands fa-youtube text-red-600 mr-3 text-xl"></i>
+                                        <h4 class="font-bold text-red-800">YouTube 影片題設定</h4>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-2">YouTube 影片網址 (學生端將顯示此影片)</label>
+                                        <input v-model="newQuiz.youtubeUrl" type="text" class="w-full p-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500" placeholder="例如：https://www.youtube.com/watch?v=xxxxxxxxxxx 或 https://youtu.be/xxxxxxxxxxx">
+                                        <p v-if="newQuiz.youtubeUrl && !getYoutubeEmbedUrl(newQuiz.youtubeUrl)" class="text-xs text-red-600 mt-1">⚠ 無法解析此 YouTube 網址，請確認格式</p>
+                                        <div v-if="getYoutubeEmbedUrl(newQuiz.youtubeUrl)" class="mt-3">
+                                            <iframe :src="getYoutubeEmbedUrl(newQuiz.youtubeUrl)" class="w-full aspect-video rounded-lg border" allowfullscreen></iframe>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- YouTube AI/Manual Tabs -->
+                                <div v-if="newQuiz.questionType === 'youtube'" class="flex border-b border-slate-200">
+                                    <button @click="createMode = 'ai'" :class="{'border-red-600 text-red-600': createMode === 'ai', 'border-transparent text-slate-500': createMode !== 'ai'}" class="px-6 py-3 border-b-2 font-medium transition">AI 從字幕出題</button>
+                                    <button @click="createMode = 'manual'" :class="{'border-red-600 text-red-600': createMode === 'manual', 'border-transparent text-slate-500': createMode !== 'manual'}" class="px-6 py-3 border-b-2 font-medium transition">手動/貼上題庫</button>
+                                </div>
+
+                                <!-- YouTube AI Mode -->
+                                <div v-if="newQuiz.questionType === 'youtube' && createMode === 'ai'" class="space-y-4 animate-fade-in">
+                                    <div class="bg-red-50 p-4 rounded-xl text-sm text-red-700">
+                                        <i class="fa-solid fa-closed-captioning mr-2"></i>請貼上影片的字幕檔內容，AI 將根據字幕內容生成題目。
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">字幕內容 (可貼上 YouTube 字幕檔/SRT/VTT/逐字稿)</label>
+                                        <textarea v-model="aiSourceText" class="w-full h-40 p-3 border border-slate-200 rounded-xl font-mono text-xs" placeholder="貼上字幕內容..."></textarea>
+                                    </div>
+                                    <div class="grid grid-cols-3 gap-4">
+                                        <div>
+                                            <label class="text-xs font-bold text-slate-500">簡單題數</label>
+                                            <input v-model.number="aiConfig.easy" type="number" min="0" class="w-full mt-1 p-2 border rounded-lg">
+                                        </div>
+                                        <div>
+                                            <label class="text-xs font-bold text-slate-500">一般題數</label>
+                                            <input v-model.number="aiConfig.medium" type="number" min="0" class="w-full mt-1 p-2 border rounded-lg">
+                                        </div>
+                                        <div>
+                                            <label class="text-xs font-bold text-slate-500">困難題數</label>
+                                            <input v-model.number="aiConfig.hard" type="number" min="0" class="w-full mt-1 p-2 border rounded-lg">
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between mb-2">
+                                        <div class="inline-flex items-center px-3 py-1.5 bg-red-50 rounded-full">
+                                            <i class="fa-solid fa-robot text-red-600 mr-2 text-xs"></i>
+                                            <span class="text-xs font-medium text-red-700">使用模型: {{ currentModelName }}</span>
+                                        </div>
+                                    </div>
+                                    <button @click="generateYoutubeQuestions" :disabled="isGenerating" class="w-full py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl font-bold hover:shadow-lg disabled:opacity-50 transition">
+                                        <span v-if="isGenerating"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>AI 正在思考中...</span>
+                                        <span v-else><i class="fa-solid fa-robot mr-2"></i>從字幕生成題目 (覆蓋現有題目)</span>
+                                    </button>
+                                </div>
+
+                                <!-- YouTube Manual Mode -->
+                                <div v-if="newQuiz.questionType === 'youtube' && createMode === 'manual'" class="space-y-4 animate-fade-in">
+                                    <div class="bg-yellow-50 p-4 rounded-xl text-sm text-yellow-800">
+                                        <p class="font-bold mb-1">格式說明 (每行一題，用 Tab 或 逗號 分隔)：</p>
+                                        <p>題目, 答案(1-4或a-d), 選項A, 選項B, 選項C, 選項D, 解析(選填)</p>
+                                    </div>
+                                    <textarea v-model="manualInput" class="w-full h-64 p-3 border border-slate-200 rounded-xl font-mono text-sm leading-relaxed" placeholder="範例：&#10;影片中提到的主角是誰？, 1, 小明, 小華, 小美, 小強, 影片開頭說明"></textarea>
+                                    <button @click="parseManualInput" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 transition">
+                                        解析並加入題目 (Append)
+                                    </button>
+                                </div>
+
                                 <!-- Tabs (只在一般選擇題時顯示) -->
                                 <div v-if="newQuiz.questionType === 'multiple-choice'" class="flex border-b border-slate-200">
                                     <button @click="createMode = 'ai'" :class="{'border-violet-600 text-violet-600': createMode === 'ai', 'border-transparent text-slate-500': createMode !== 'ai'}" class="px-6 py-3 border-b-2 font-medium transition">AI 自動出題</button>
@@ -979,7 +1049,7 @@
                             <div class="p-6 border-t border-slate-100 sticky bottom-0 bg-white flex justify-end gap-3">
                                 <button @click="showCreateQuiz = false" class="px-6 py-2 text-slate-500 font-medium hover:bg-slate-50 rounded-xl">取消</button>
                                 <button @click="saveQuiz"
-                                    :disabled="(newQuiz.questionType === 'matching' && newQuiz.matchingPairs.length === 0) || (newQuiz.questionType !== 'matching' && newQuiz.questions.length === 0)"
+                                    :disabled="(newQuiz.questionType === 'matching' && newQuiz.matchingPairs.length === 0) || (newQuiz.questionType !== 'matching' && newQuiz.questions.length === 0) || (newQuiz.questionType === 'youtube' && !getYoutubeEmbedUrl(newQuiz.youtubeUrl))"
                                     class="px-6 py-2 bg-violet-600 text-white font-bold rounded-xl shadow-lg shadow-violet-200 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed">
                                     {{ editingQuizId ? '更新題庫' : '儲存新題庫' }}
                                 </button>
@@ -1353,7 +1423,7 @@
                 </div>
 
                 <!-- VIEW: Quiz Taking -->
-                <div v-else-if="currentView === 'quiz'" :class="(activeQuiz.questionType === 'reading-comprehension' || activeQuiz.questionType === 'literacy-group') ? 'max-w-7xl mx-auto w-full' : (activeQuiz.questionType === 'matching' ? 'w-[90%] mx-auto' : 'max-w-2xl mx-auto w-full')">
+                <div v-else-if="currentView === 'quiz'" :class="(activeQuiz.questionType === 'reading-comprehension' || activeQuiz.questionType === 'literacy-group' || activeQuiz.questionType === 'youtube') ? 'max-w-7xl mx-auto w-full' : (activeQuiz.questionType === 'matching' ? 'w-[90%] mx-auto' : 'max-w-2xl mx-auto w-full')">
                     <!-- Header (For non-matching types) -->
                     <div v-if="activeQuiz.questionType !== 'matching'" class="mb-6 flex justify-between items-center">
                         <span class="text-slate-500 font-medium">考生：{{ studentName }}</span>
@@ -1429,6 +1499,45 @@
                                 {{ activeQuiz.questions[currentQuestionIndex].title }}
                             </h4>
 
+                            <div class="space-y-3">
+                                <button v-for="(opt, idx) in activeQuiz.questions[currentQuestionIndex].options" :key="idx"
+                                    @click="selectAnswer(idx + 1)"
+                                    :class="{'bg-sky-500 text-white border-sky-500': currentAnswer === (idx + 1), 'bg-white text-slate-700 border-slate-200 hover:border-sky-300 hover:bg-sky-50': currentAnswer !== (idx + 1)}"
+                                    class="w-full text-left p-4 rounded-xl border-2 transition-all duration-200 font-medium flex items-center group">
+                                    <span class="w-8 h-8 rounded-full border-2 flex items-center justify-center mr-4 text-sm font-bold"
+                                        :class="{'border-white text-white': currentAnswer === (idx + 1), 'border-slate-300 text-slate-400 group-hover:border-sky-400 group-hover:text-sky-400': currentAnswer !== (idx + 1)}">
+                                        {{ String.fromCharCode(65+idx) }}
+                                    </span>
+                                    {{ opt }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- YouTube Layout: Video Left, Question Right -->
+                    <div v-if="activeQuiz.questionType === 'youtube'" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <!-- Left Column: YouTube Video -->
+                        <div class="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-2 h-full bg-red-500"></div>
+                            <div class="flex items-center mb-4">
+                                <i class="fa-brands fa-youtube text-red-600 mr-3 text-xl"></i>
+                                <h3 class="text-lg font-bold text-slate-800">影片</h3>
+                            </div>
+                            <div class="aspect-video w-full">
+                                <iframe v-if="getYoutubeEmbedUrl(activeQuiz.youtubeUrl)" :src="getYoutubeEmbedUrl(activeQuiz.youtubeUrl)" class="w-full h-full rounded-xl border" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+                                <div v-else class="w-full h-full bg-slate-100 rounded-xl flex items-center justify-center text-slate-400">影片網址無效</div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Question -->
+                        <div class="bg-white p-6 rounded-3xl shadow-lg border border-slate-100 relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-2 h-full bg-sky-500"></div>
+                            <div class="flex items-center mb-4">
+                                <h3 class="text-lg font-bold text-slate-800">題目</h3>
+                            </div>
+                            <h4 class="text-xl font-bold text-slate-800 mb-6 leading-relaxed">
+                                {{ activeQuiz.questions[currentQuestionIndex].title }}
+                            </h4>
                             <div class="space-y-3">
                                 <button v-for="(opt, idx) in activeQuiz.questions[currentQuestionIndex].options" :key="idx"
                                     @click="selectAnswer(idx + 1)"
@@ -1703,7 +1812,7 @@
         
         <!-- Footer -->
         <footer class="bg-white/80 backdrop-blur-md border-t border-slate-200 py-4 text-center text-sm text-slate-500">
-            Made by <a href="https://kentxchang.blogspot.com/" target="_blank" class="text-violet-600 hover:underline font-bold">阿剛老師 V1.5.1</a>
+            Made by <a href="https://kentxchang.blogspot.com/" target="_blank" class="text-violet-600 hover:underline font-bold">阿剛老師 V1.5.2</a>
         </footer>
     </div>
 
@@ -2194,7 +2303,7 @@ const __firebaseConfig = {
   apiKey: "demo",
   authDomain: "demo",
   projectId: "demo",
-  storageBucket: "demoV1.5.1",
+  storageBucket: "demoV1.5.2",
   messagingSenderId: "demo",
   appId: "demo"
 };
@@ -2227,7 +2336,7 @@ createApp({
   apiKey: "demo",
   authDomain: "demo",
   projectId: "demo",
-  storageBucket: "demoV1.5.1",
+  storageBucket: "demoV1.5.2",
   messagingSenderId: "demo",
   appId: "demo"
         };
@@ -2315,7 +2424,8 @@ createApp({
             questions: [],
             questionType: 'multiple-choice',
             readingPassage: '', // For reading comprehension
-            matchingPairs: [] // For matching questions
+            matchingPairs: [], // For matching questions
+            youtubeUrl: '' // For youtube questions
         });
 
         // Reading comprehension configuration
@@ -2995,6 +3105,78 @@ service cloud.firestore {
             }
         };
 
+        // YouTube helpers
+        const getYoutubeEmbedUrl = (url) => {
+            if (!url) return '';
+            try {
+                let videoId = '';
+                const trimmed = url.trim();
+                let m = trimmed.match(/(?:youtube\.com\/watch\?[^#]*v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/);
+                if (m) videoId = m[1];
+                else if (/^[A-Za-z0-9_-]{11}$/.test(trimmed)) videoId = trimmed;
+                if (!videoId) return '';
+                return `https://www.youtube.com/embed/${videoId}?rel=0`;
+            } catch (e) { return ''; }
+        };
+
+        const generateYoutubeQuestions = async () => {
+            if (!aiSourceText.value || !aiSourceText.value.trim()) {
+                showAlert("缺少字幕", "請貼上 YouTube 字幕內容", "warning");
+                return;
+            }
+            isGenerating.value = true;
+            newQuiz.questions = [];
+
+            const prompt = `
+                你是一位專業教師。以下是 YouTube 影片的字幕內容，請根據字幕生成一份選擇題測驗，題目需聚焦影片實際提及的內容。
+
+                需求設定:
+                - 簡單題數: ${aiConfig.easy}
+                - 一般題數: ${aiConfig.medium}
+                - 困難題數: ${aiConfig.hard}
+                - 語言: 繁體中文 (Traditional Chinese)
+
+                輸出格式必須是嚴格的 JSON Array，不要 Markdown 標記，格式如下:
+                [
+                    {
+                        "title": "題目內容",
+                        "options": ["選項A", "選項B", "選項C", "選項D"],
+                        "answer": 1,
+                        "difficulty": "簡單",
+                        "explanation": "解析內容（可附上影片中相關片段提示）"
+                    }
+                ]
+            `;
+
+            const contents = [{
+                parts: [
+                    { text: prompt },
+                    { text: `字幕內容:\n${aiSourceText.value}` }
+                ]
+            }];
+
+            try {
+                const url = getApiUrl();
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents })
+                });
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error.message);
+                let text = data.candidates[0].content.parts[0].text;
+                text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+                const questions = JSON.parse(text);
+                newQuiz.questions = questions;
+                showAlert("生成成功", `成功生成 ${questions.length} 題`, "success");
+            } catch (e) {
+                console.error(e);
+                showAlert("生成失敗", "AI 出題失敗: " + e.message, "error");
+            } finally {
+                isGenerating.value = false;
+            }
+        };
+
         // Matching Questions Functions
         const generateMatchingQuestions = async () => {
             if (!aiSourceText.value && !aiImageBase64.value) {
@@ -3127,6 +3309,7 @@ service cloud.firestore {
             newQuiz.questionType = 'multiple-choice';
             newQuiz.readingPassage = '';
             newQuiz.matchingPairs = [];
+            newQuiz.youtubeUrl = '';
             aiSourceText.value = '';
             aiImageBase64.value = '';
             manualInput.value = '';
@@ -3523,6 +3706,7 @@ Output format must be a strict JSON Array without Markdown markers:
             newQuiz.readingPassage = quiz.readingPassage || '';
             newQuiz.questions = JSON.parse(JSON.stringify(quiz.questions)); // Deep copy to prevent mutating original before save
             newQuiz.matchingPairs = quiz.matchingPairs ? JSON.parse(JSON.stringify(quiz.matchingPairs)) : [];
+            newQuiz.youtubeUrl = quiz.youtubeUrl || '';
 
             // Clear source inputs as we are editing existing result
             aiSourceText.value = '';
@@ -3541,6 +3725,7 @@ Output format must be a strict JSON Array without Markdown markers:
             newQuiz.readingPassage = quiz.readingPassage || '';
             newQuiz.questions = JSON.parse(JSON.stringify(quiz.questions));
             newQuiz.matchingPairs = quiz.matchingPairs ? JSON.parse(JSON.stringify(quiz.matchingPairs)) : [];
+            newQuiz.youtubeUrl = quiz.youtubeUrl || '';
             showCreateQuiz.value = true;
             aiSourceText.value = '';
             aiImageBase64.value = '';
@@ -3559,6 +3744,7 @@ Output format must be a strict JSON Array without Markdown markers:
                     readingPassage: newQuiz.readingPassage,
                     questions: newQuiz.questions,
                     matchingPairs: newQuiz.matchingPairs || [],
+                    youtubeUrl: newQuiz.youtubeUrl || '',
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(), // Update timestamp on edit? Maybe better to keep original created, add updated. For simplicity, just update.
                     teacherId: user.value.uid
                 };
@@ -4544,6 +4730,8 @@ Output format must be a strict JSON Array without Markdown markers:
             literacyConfig, handleLiteracyFileUpload, analyzeLiteracyUnits, toggleUnit, generateLiteracyGroup, checkAnswerMismatch, fixAnswerMismatch,
             // Matching Questions
             matchingConfig, matchingManualInput, generateMatchingQuestions, parseMatchingManualInput, addMatchingPair, editMatchingPair, deleteMatchingPair,
+            // YouTube Questions
+            getYoutubeEmbedUrl, generateYoutubeQuestions,
             // Question Editor
             showQuestionEditor, currentEditingQuestion, currentEditingQuestionIndex, addQuestion, editQuestion, saveQuestion, deleteQuestion,
             handleImageUpload, handlePdfUpload, generateQuestions, parseManualInput, saveQuiz, deleteQuiz, activateQuiz, deactivateQuiz, formatDate,
